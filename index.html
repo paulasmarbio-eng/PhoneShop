@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+   
+<script src="app.js?t=3" defer></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="https://raw.githubusercontent.com/paulasmarbio-eng/KSA-AGRI-COM-APP/refs/heads/main/manifest.json">
+<link rel="stylesheet" href="style.css?t=44" />
+ 
+<meta charset="UTF-8">
+
+ 
+  </head>
+  <body dir="rtl" class="body">
+
+    <div class="loading">
+     <div class="loader"></div>
+ </div>
+ <div id="fakeBox"> <div id="navbar"></div></div>
+
+    <div class="container" style="margin-top: 80px;">
+      <h1 class="header" id="h1Val">فاتورة البيع الرسمية</h1>
+      <br><br>
+
+      <!-- Your current form and content goes here -->
+
+    </div>
+
+
+
+ <script>
+  let items;
+    //get locations
+   function getSalesSheetJson (){
+
+   
+    
+    let url = 'https://script.google.com/macros/s/AKfycbxnVyT_evlaYhAcPZMElI_cAXAtedMp0fVa0IRPp5nScE7sdpmEwJDj2XzsXSV5ew2Xjw/exec?id='+encodeURIComponent(id);
+    fetch(url)
+.then(res => res.json())
+.then(out =>
+  processSalesSheetData(out)
+)
+
+ 
+ 
+
+
+ 
+.catch(err => console.log(err));
+}
+function getCatData (a) {
+ for (let i=1; i<=a.length; i++){
+  if(a[i])
+  $("#category").append(`<option value="${a[i].id}"> ${a[i].id} </option>`);
+ }
+}
+ 
+    function processSalesSheetData (jsData) {
+      checkData();
+processLocationData(jsData.locations);
+processCustomersData(jsData.customers);
+processItemData(jsData.types);
+getCatData(jsData.cat);
+items=jsData.types;
+   
+
+console.log("jsData1");
+     console.log(jsData)
+      console.log("jsData2");
+
+      $(".loading").hide();
+
+      const targetElement = document.getElementById('location');
+
+// Scroll the element into view/*
+/*targetElement.scrollIntoView({
+    behavior: 'smooth',  // Smooth scrolling
+    block: 'center',     // Align the element to the center vertically
+    inline: 'center'     // Align the element to the center horizontally
+});*/
+ 
+}  
+  
+
+    function processLocationData (jsData){
+      console.log("jsData1");
+      getLocationSelectOptions(jsData)
+      console.log("jsData2");
+      
+    }
+
+ 
+    function processCustomersData (jsData){
+      console.log("jsData1");
+      getCustomerSelectOptions(jsData);
+      console.log("jsData2");
+    }
+    function processItemData (jsData){
+      getItemSelectOptions (jsData);
+    }
+   
+ 
+
+function getCustomerSelectOptions(arrayOfLocations){
+      let html=`<option  style="display:none"  disabled selected  value="" > </option>`;
+
+      for (i=0; i<arrayOfLocations.length;i++){
+        let optionVal= `<option fpw="${arrayOfLocations[i].fpw}" fpr="${arrayOfLocations[i].fpr}" fpb="${arrayOfLocations[i].fpb}"  phone="${arrayOfLocations[i].phone}" location="${arrayOfLocations[i].location}" value="${arrayOfLocations[i].name}" >${arrayOfLocations[i].name}</option>`;
+        html+=optionVal;
+      }
+
+
+      console.log("html");
+      console.log(html);
+      console.log("htm2");
+   document.getElementById("customerSelect").innerHTML = html;
+
+    }
+
+
+function getItemSelectOptions(arrayOfLocations){
+      let html=`<option  style="display:none"  disabled selected  value="" > </option>`;
+
+      for (i=0; i<arrayOfLocations.length;i++){
+        let optionVal= `<option category="${arrayOfLocations[i].category}" price="${arrayOfLocations[i].cost}" avrgcost="${arrayOfLocations[i].averageCost}" value="${arrayOfLocations[i].id}" >${arrayOfLocations[i].type.replace(/&nbsp;/g, ' ')}</option>`;
+        html+=optionVal;
+      }
+
+
+      console.log("html");
+      console.log(html);
+      console.log("htm2");
+   //document.getElementById("itemSelect").innerHTML = html;
+
+   renderDataList(arrayOfLocations);
+
+    }
+
+    function processSearch() {
+    const searchInput = document.getElementById('itemSearch');
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    const queryLower = query.toLowerCase();
+
+    // 1. Search existing items array
+    let matchedItem = items.find(item => 
+        (item.barcode && String(item.barcode).toLowerCase() === queryLower) ||
+        (item.id && String(item.id).toLowerCase() === queryLower) ||
+        (item.type && String(item.type).toLowerCase() === queryLower)
+    );
+
+    let price = 0;
+
+    if (!matchedItem) {
+        // Option A: Custom Item (not found in stock list)
+        let enteredPrice = prompt(`Enter price for custom item "${query}":`, "0");
+        if (enteredPrice === null) return; // Cancelled by user
+        
+        price = parseFloat(enteredPrice) || 0;
+
+        matchedItem = {
+            id: "CUSTOM",
+            type: query,
+            averageCost: 1,
+            cost: price,
+            category: "Custom"
+        };
+
+    } else if (matchedItem.category && (matchedItem.category.toLowerCase() === "maintenance"||matchedItem.category.toLowerCase() === "wish")) {
+        // Option B: Known item, but belongs to Maintenance category
+        let defaultPrice = matchedItem.cost || 0;
+        let enteredPrice = prompt(`Enter maintenance charge for "${matchedItem.type}":`, defaultPrice);
+        if (enteredPrice === null) return; // Cancelled by user
+        
+        price = parseFloat(enteredPrice) || 0;
+
+        // Clone item to assign the custom maintenance price without mutating original stock
+        matchedItem = { ...matchedItem, cost: price };
+    }
+
+    addItemToCartOrIntake(matchedItem);
+    searchInput.value = '';
+}
+function addItemToCartOrIntake  (item) {
+let template = `
+    <tr class="itemInTable">
+        <td><label style="width: auto;">${item.type}</label></td>
+        <td><input type="number" step="0.01" class="item-price" value="${item.averageCost}" style="width: 70px;"/></td>
+        <td><input type="number" class="item-qty" value="1" min="1" style="width: 70px;"/></td>
+        <td><label class="item-subtotal" style="width: auto;">${parseFloat(item.averageCost).toFixed(2)}</label></td>
+        <td>
+            <label style="display:none">${item.cost}</label>
+            <div class="removebtn" onclick="removeItem($(this))" style="cursor:pointer; color:red;">x</div>
+        </td>
+    </tr>`;
+
+    $('#invoice tr:last').after(template);    
+    clearItemSelect();
+    updateTotalInvoice();
+}
+ 
+// 1. Listen for changes in Quantity or Price inputs
+$(document).on('input', '.item-qty, .item-price', function () {
+    let row = $(this).closest('tr');
+    
+    // Calculate subtotal for this row
+    let price = parseFloat(row.find('.item-price').val()) || 0;
+    let qty = parseFloat(row.find('.item-qty').val()) || 0;
+    let subtotal = price * qty;
+
+    // Update row subtotal display
+    row.find('.item-subtotal').text(subtotal.toFixed(2));
+
+    updateTotalInvoice();
+    // Recalculate invoice grand total
+  //  updateGrandTotal();
+});
+/*
+// 2. Recalculate the entire invoice total
+function updateGrandTotal() {
+    let grandTotal = 0;
+
+    $('.itemInTable').each(function () {
+        let price = parseFloat($(this).find('.item-price').val()) || 0;
+        let qty = parseFloat($(this).find('.item-qty').val()) || 0;
+        grandTotal += (price * qty);
+    });
+
+    // Update your grand total element (replace #grandTotal with your element's ID)
+    $('#grandTotal').text('$' + grandTotal.toFixed(2));
+}
+
+// 3. Remove item and recalculate
+function removeItem(btn) {
+    btn.closest('tr').remove();
+    updateGrandTotal();
+}*/
+
+    function getLocationSelectOptions(arrayOfLocations){
+      let html=`<option value="غير محدد "> غير محدد  </option>`;
+
+      for (i=0; i<arrayOfLocations.length;i++){
+        let optionVal= `<option value="${arrayOfLocations[i].name}" > ${arrayOfLocations[i].name}</option>`;
+        html+=optionVal;
+      }
+
+
+      console.log("html");
+      console.log(html);
+      console.log("htm2");
+     document.getElementById("location").innerHTML = html;
+
+    }
+
+
+
+    //get customers 
+
+    //get Types and prices
+
+    function saveSale(){
+        // save item sales 
+        
+        // save customer if new, else skip
+
+        //
+
+    }
+function sendMessageAfterSuccess (){
+
+}
+
+if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(
+        position => {
+            console.log("Latitude: " + position.coords.latitude);
+            console.log("Longitude: " + position.coords.longitude);
+        },
+        error => {
+            console.error("Geolocation permission denied or error: " + error.message);
+        }
+    );
+} else {
+    console.error("Geolocation is not supported by this browser.");
+}
+
+// handling div buttons
+
+console.log("test co11");
+$(document).ready(function(){
+ 
+  $(".navbar-toggle").click(function() {
+          $("#navbar-collapse").collapse('toggle');
+        });
+       
+ // $(".loading").hide();
+   checkData();
+   // Scroll the page to the far right
+   /*window.addEventListener('load', () => {
+            // Scroll to the far right of the page
+            window.scrollTo({
+                top: 0,
+                left: document.documentElement.scrollWidth,
+                behavior: 'smooth'  // This makes the scrolling smooth
+            });
+        });*/
+
+    getSalesSheetJson();
+$('.myradio').click(function(){
+
+console.log("test co111"+$(this).attr('id'));
+if ($(this).attr('id')=="newCustomerToggel"){
+$(".newCustomer").show();
+$(".oldCustomer").hide();
+
+}
+else {
+$(".newCustomer").show();
+$(".oldCustomer").show();
+}
+$('.myradio').removeClass('myactive');
+$(this).addClass('myactive');
+});
+// show hide dive
+console.log("test co");
+
+const searchInput = document.getElementById('itemSearch');
+
+// Trigger on Barcode Scanner submission (Enter Key)
+searchInput.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        processSearch();
+    }
+});
+
+
+});
+
+console.log("test co22");
+function changeLocHandler(a) {
+  $("#customerSelect").val([]);
+  let valtoHide= a.find(":selected").attr('value');
+  $("#customerSelect option").hide();
+  $("#customerSelect option[location='"+valtoHide+"']").show();
+
+  if($('#location').prop('selectedIndex')==0){
+    
+    $("#customerSelect option").show();
+    $("#newLocation").prop('disabled', false);
+     $("#newLocation").val('');
+  }
+  else {
+      $("#newLocation").prop('disabled', true);
+      $("#newLocation").val(valtoHide);
+  }
+}
+
+function changeCatHandler(a) {
+  let functionSelecter="#itemSelect";
+  $(functionSelecter).val([]);
+  let valtoHide= a.find(":selected").attr('value');
+  $(functionSelecter+" option").hide();
+  $(functionSelecter+ " option[category='"+valtoHide+"']").show();
+
+  if($('#category').prop('selectedIndex')==0){
+    
+    $(functionSelecter+ " option").show();
+    
+  }
+   
+}
+let oldCustomerBool=false;
+ 
+   let fixedProfitw = 6 ;
+   let fixedProfitr = 6 ;
+   let fixedProfitb = 6 ;
+function selectCustomerHandler(a) {
+  //$("#location").val($("#location option:first").val());
+  $("#newLocation").prop('disabled', true);
+  $("#newLocation").val(a.find(":selected").attr('location'));
+ oldCustomerBool=true;
+  $("#customerName").val(a.find(":selected").attr('value'));
+  $("#customerPhone").val(a.find(":selected").attr('phone'));
+       $("#customerName").prop('disabled', true);
+   $("#customerPhone").prop('disabled', true);
+    
+  if(oldCustomerBool){
+    fixedProfitw=a.find(":selected").attr('fpw')*1;
+    fixedProfitr=a.find(":selected").attr('fpr')*1;
+    fixedProfitb=a.find(":selected").attr('fpb')*1;
+  }
+}
+
+  function selectTypeHandler(a) {
+    let price= a.find(":selected").attr('price');
+    // Changing fixed profit logic, to profit based on color type based on customer
+  /*let averageCost= a.find(":selected").attr('avrgcost');  
+    let type= a.find(":selected").attr('value');
+    let price= averageCost*1;
+    if(type=="whiteb") {
+price=averageCost*1+fixedProfitw;
+       }
+   else if(type=="redb") {
+price=averageCost*1+fixedProfitr;
+       }
+  else if(type=="baladi") {
+price=averageCost*1+fixedProfitb;
+       }
+ */
+  $("#visiblePrice").val(price);
+  $("#averageCost").val(averageCost);
+   //$("#visiblePrice").attr("placeholder", price);
+
+}
+
+function clearCustomerSelect()
+{
+  
+  oldCustomerBool=false;
+  $('#customerSelect').prop('selectedIndex',-1);
+   $("#customerName").val('');
+   $("#customerPhone").val('');
+   $("#newLocation").val('');
+   $("#customerName").prop('disabled', false);
+   $("#newLocation").prop('disabled', false);
+   $("#customerPhone").prop('disabled', false);
+}
+// adding item script
+function clearItemSelect(){
+  $('#itemSelect').prop('selectedIndex',0);
+  $('#visiblePrice').val('');
+  $('#boxQ').prop('selectedIndex',0);
+  
+  $("#averageCost").val('');
+  $('#itemQuantity').val('');
+}
+//translate arabic numbers to english
+ const a2e = s => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+
+function addItem(){
+  let itemName=$('#itemSelect').find(":selected").text();
+  let itemBoxPrice=$('#visiblePrice').val();
+  let itemPkg = $('#boxQ').find(":selected").val();
+  let quantityInBox= $('#itemQuantity').val();
+  let averageCost = $('#averageCost').val(); 
+
+
+// convertt what needs conversion for arabic JS numbers
+
+  itemBoxPrice=a2e(itemBoxPrice);
+  quantityInBox=a2e(quantityInBox);
+
+/// end of conversion 
+
+// convert strings to numbers
+
+  itemBoxPrice=Number(itemBoxPrice);
+  averageCost=Number(averageCost);
+  quantityInBox=Number(quantityInBox);
+
+// end convert string to numbers
+let totalItemPrice =  quantityInBox*itemBoxPrice;
+
+  if(itemPkg=="carton") {
+    totalItemPrice= (totalItemPrice/12).toPrecision(3);
+    quantityInBox= (quantityInBox/12).toPrecision(3);
+  //    totalItemPrice=Math.round((totalItemPrice + Number.EPSILON) * 100) / 100;
+ // quantityInBox=Math.round((quantityInBox + Number.EPSILON) * 100) / 100;
+  }
+
+let totalItemAverageCost =  quantityInBox*averageCost;
+
+
+  let template = `      <tr class="itemInTable">
+                <td><label style="  width: auto;" >${itemName}</label ></td>
+                <td><label style="  width: auto;">${itemBoxPrice}</label ></td>
+                <td><label style="  width: auto;">${quantityInBox}</label ></td>
+                <td><label style="  width: auto;">${totalItemPrice}</label ></td>
+                <td> <label style=" display:none">${averageCost}</label>  <div class="removebtn" onclick="removeItem($(this))">x</div> </td>
+
+                </tr>` ;
+              //  alert(template);
+
+    $('#invoice tr:last').after(template);    
+    clearItemSelect();
+    updateTotalInvoice();      
+
+}
+function removeItem (a) {
+ 
+   $(a).closest('tr').remove(); 
+   
+    updateTotalInvoice();      
+}
+let invoiceObject = [];
+let invoiceText = ``;
+function updateTotalInvoice () {
+  invoiceObject = [];
+  invoiceText = ``;
+  let table = document.getElementById("invoice");
+  
+  var totalPrice=0;
+  
+for (var i = 1, row; row = table.rows[i]; i++) {
+let rowItem = {
+  type:row.cells[0].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
+  priceBox:row.cells[1].getElementsByTagName("input")[0].value,
+  quantity:row.cells[2].getElementsByTagName("input")[0].value,
+  totalPrice:row.cells[3].getElementsByTagName("label")[0].innerHTML,
+  averageCost:row.cells[4].getElementsByTagName("label")[0].innerHTML
+}
+
+console.log("row.cells[ erHTML");
+console.log(rowItem);
+invoiceObject.push(rowItem);
+totalPrice+=rowItem.totalPrice*1.00;
+invoiceText+=rowItem.type+" عدد صندوق : "+rowItem.quantity+"  مجموع السعر  : "+ rowItem.totalPrice +"$";
+invoiceText+=`
+`;
+
+}
+console.log(totalPrice);
+$("#totalSumInvoiceSpan").html(totalPrice);
+$("#totalSumInvoice").val(totalPrice);
+$("#totalSumInvoiceCollected").val(totalPrice);
+
+$("#totalSumInvoiceLiraSpan").html(totalPrice*90000);
+// add a hidden field to savew the value of the total invoice
+$("#totalSumInvoiceServer").val(totalPrice);
+
+}
+  </script> 
+ 
+  <form id="inForm" onsubmit="event.preventDefault(); geoFindMe(this);">
+    <input type=hidden  name="method" value="add"/>
+      <div class="inputItem" >
+
+            <div class="search-container">
+    
+        <input 
+            type="text" 
+            id="itemSearch" 
+            list="stockOptions" 
+            placeholder="Type name, ID, or scan barcode..." 
+            autocomplete="off" 
+            autofocus
+            style="
+    width: 700px;
+"
+        >
+        <datalist id="stockOptions"></datalist>
+    </div>
+
+    <script>
+       const dataList = document.getElementById('stockOptions');
+     
+
+// Step 1: Populate dropdown on page load
+function renderDataList(stockList) {
+    dataList.innerHTML = ''; 
+    stockList.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.type.replace(/&nbsp;/g, ' '); 
+
+        option.innerText = ` $${item.averageCost} (${item.category})`;
+        dataList.appendChild(option);
+    });
+}
+
+
+    </script>
+           
+                      
+                       
+                             
+                             </div>
+                             <br><br>
+  
+    </div>
+    <div style="width: 500px; ">
+    <div style="width: 100px;"><h1>الفاتورة </h1></div> 
+    </div>
+    <div id="invoiceTable" class="inputItem">
+                 <table id="invoice" dir="rtl">
+            <tr> 
+             <th> <label >غرض</label> </th>
+             <th> <label style="  width: auto;" >سعر الصندوق </label> </th>
+             <th>  <label style="  width: auto;" >كمية </label></th>
+             <th>  <label style="  width: auto;">السعر الإجمالي</label> </th>
+               <th style="  width: auto;">  <label>. </label> </th>
+              </tr>
+
+            </table>
+   </div>
+
+    <div class="inputItem" style="width:auto">
+                       <label style="width:auto" >المجموع <span id="totalSumInvoiceSpan"> </span> $ </label>
+ 
+   <br><br>
+                         <label style="width:auto">أو 
+                         <span id="totalSumInvoiceLiraSpan"> </span> L.L. </label>
+   <input type="number"  id="totalSumInvoiceLira"  name="totalSumInvoiceLira" placeholder="القبض" />
+ 
+   <input type="hidden"  id="totalSumInvoiceServer" name="totalSumInvoiceServer"/>
+   <input type="hidden"  id="vanNumber" name="vanNumber" value=van1 />
+    </div>
+    <br>  <br>
+    <div class="inputItem" style="width:auto">
+                       <label style="width:auto" >القبض $ </label>
+   <input type="number"  id="totalSumInvoice"  step="any" name="totalSumInvoice" placeholder="القبض" />
+  
+    </div>
+    
+    <br><br>
+    <button class="save" >   يحفظ   </label> </button>
+    <br><br> 
+    <div class="inputItem">
+<label>المنطقة  </label>
+    <select id="location" onchange="changeLocHandler($(this))">
+     
+      <option value="غير محدد "> غير محدد  </option> 
+    </select>
+ <select id="customerSelect" onchange="selectCustomerHandler($(this))">  </td>
+    </select>
+    
+    </div>
+  <br>
+ 
+      <div class="inputItem newCustomer height"  style="
+    height: 300px;
+">
+       <label style="width:auto" >ملء معلومات العميل </label>
+ <div style="float:right" > 
+    <label>المنطقة  </label>
+   <input type=text  name="newLocation" id="newLocation"/>
+    </div>
+    <div style="float:right ; margin-left:15px">
+     <label>اسم العميل</label>
+   <input type=text  name="customerName" id="customerName"/>
+
+   </div>
+     <div style="float:right">
+       <label>رقم التليفون</label>
+   <input type="tel"  name="customerPhone"  id="customerPhone"/>    <button type="button" class="img-button" onclick="openWhatsApp()">
+    <img src="wtsp.png" alt="WhatsApp">
+  </button>
+
+  <button type="button" class="img-button" onclick="openMaps()">
+    <img src="googlemaps.png" alt="googleMaps">
+  </button>
+</div>
+
+
+  <script>
+    // Function to open the link
+    function openWhatsApp() {
+      const phoneNumber = $("#customerPhone").val(); // Replace with the desired phone number
+      const message = "Hello!"; // Replace with a pre-filled message (optional)
+      const encodedMessage = encodeURIComponent(message);
+      const url = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+      // Open the WhatsApp link in a new tab
+      window.open(url, "_blank");
+    }
+
+    function openMaps() {
+      const phoneNumber = $("#customerPhone").val(); // Replace with the desired phone number
+      const message = "Hello!"; // Replace with a pre-filled message (optional)
+      const encodedMessage = encodeURIComponent(message);
+      const url = `window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}', '_blank')`;
+
+      // Open the WhatsApp link in a new tab
+      window.open(url, "_blank");
+    }
+
+   
+
+
+  </script>
+    </div>
+    <br>  <br>
+  
+       
+   
+    
+   <input type="hidden"  name="alt" />
+   <input type="hidden"  name="long"/>
+    </form>
+  
+</body>
+<script>
+
+  
+
+
+  function onSuccess() {
+    let number=a2e ($("#customerPhone").val());
+    let convNumber = Number(number);
+    let wNumber="+961"+convNumber;
+    let text = ` ${params.startMsgAR}
+    
+    ---------------------------
+    ---------------------------
+
+     ` ;
+  text += `فاتورة بيع رسمية : 
+
+---------------------------
+`;
+text+=invoiceText;
+text+= `
+
+---------------------------
+
+المجموع :    ${$("#totalSumInvoiceSpan").html()} $
+   
+---------------------------
+   `;
+
+   text+= `
+---------------------------
+
+إستلام مبلغ  :    ${$("#totalSumInvoice").val()} $
+   
+---------------------------
+   `;
+
+   
+  // alert (encodeURIComponent(text));
+//  alert(invoiceText);
+
+ swal({
+title: 'نجح',
+text: ' تمت العملية بنجاح، شكرا لك'+' \n'+invoiceText,
+icon: "success",
+    closeOnClickOutside: false,
+    closeOnEsc: false,
+buttons: {
+    cancel: "أغلقه",
+  confirm: " أرسل رسالة",
+ 
+},
+})
+.then((willSendWhatsap) => {
+if (willSendWhatsap) {
+  window.open('https://wa.me/'+wNumber+'?text='+encodeURIComponent(text), '_blank');
+  swal(' مرسل', {
+    icon: "success",
+    closeOnClickOutside: false,
+    closeOnEsc: false
+  }).then(function(){ 
+ reLoad();
+ });
+} else {
+  swal(' شكرًا لك').then(function(){ 
+reLoad();
+ });
+}
+});
+    }
+
+   
+
+
+ function geoFindMe(form) {
+$(".save").prop('disabled', true);
+     geolocation = new Promise((resolve, reject) => {
+navigator.geolocation.watchPosition(
+  position => { resolve(position.coords) },
+  error => { reject(error) }
+)
+}).catch(error => error)
+    
+
+    
+
+      if(!navigator.geolocation) {
+      } else {
+       new Promise(function(resolve,reject){
+
+resolve(geolocation);
+
+}).then(function(coords){
+    console.log("koukou in then 4");
+  form.alt.value=coords.latitude;
+  form.long.value=coords.longitude;
+}).then(function(){ 
+    console.log("koukou in then 5");
+let objToSave = {
+    method:'add',
+    e:id,
+  arrayOfItems:invoiceObject,
+  alt:form.alt.value,
+  longi:form.long.value,
+  name:form.customerName.value,
+  phone:a2e(form.customerPhone.value),
+  location:form.newLocation.value,
+ bankDollar:a2e(form.totalSumInvoice.value),
+bankLira:a2e(form.totalSumInvoiceLira.value),
+ totalHiddenBankAccount:form.totalSumInvoiceServer.value,
+ vanNumber:user,
+ oldCustomer:oldCustomerBool,
+ jsTs:Date.now().toString()
+
+}
+
+console.log("koukou in then 7");
+       if (navigator.onLine) {
+        sendRequest(objToSave);
+       console.log( 'Data sent successfully!');
+       
+       console.log( objToSave);
+    } else {
+        // Save the request in IndexedDB if offline
+        saveRequest(objToSave);
+          console.log('Offline. Data will be sent when online.');
+    }
+
+     onSuccess();
+  
+// fetch the data to google api 
+
+//run the onSuccess handler in the resolve promise
+
+// handle the save later google.script.run.withSuccessHandler(onSuccess).saveToGoogleSheet(objToSave)
+});
+
+      }
+    }
+
+function reLoad() {
+  // handle reload
+  window.location.reload();
+}
+
+</script>
+  <!-- Popup Modal -->
+  <div id="myModal" class="modal">
+    <div class="modal-content">
+        <h3>ألبوم الصور </h3>
+        <div id="modalContent"></div>
+        </div>
+    
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Open Modal
+        $("#openModal").click(function() {
+            $("#myModal").fadeIn();
+            const targetElement = document.getElementById('myModal');
+
+// Scroll the element into view
+/*targetElement.scrollIntoView({
+    behavior: 'smooth',  // Smooth scrolling
+    block: 'center',     // Align the element to the center vertically
+    inline: 'center'     // Align the element to the center horizontally
+});*/
+            fillModalContent();
+        });
+
+        // Close Modal
+        $(document).on('click', '.closeModal', function() {
+    $('#myModal').fadeOut();
+});
+
+         
+    });
+
+    function fillModalContent (){ 
+      let template = ``;
+    for (let i = 0; i < items.length; i++) { // Added 'let' for proper scoping
+        template += `
+        <div class="item-container">
+          ${items[i].type} : <br>
+            <img src="https://drive.google.com/thumbnail?id=${items[i].imgId}&sz=w1000" alt="Item Image"><br>
+            <label>سعر</label>
+            <input type="number" class="imgPrice" value="${items[i].cost}"  style="width:80px;">
+            <label>كمية</label>
+            <input type="number" class="qty" value=""  style="width:80px;">
+            <input type="hidden" class="avrgCostImg" value="${items[i].averageCost}">
+            <div class="addbtnFromImg" onclick="addItemFromImg('${items[i].type}', this)">+</div> <!-- Added 'this' parameter -->
+            <button class="closeModal">Close</button>
+        </div> <br> <br>`;
+    }
+    $("#modalContent").html(template);
+}
+/*
+function addItemFromImg(itemName, element) { // Added 'element' parameter
+    // Get the parent container of the clicked button
+    const parentContainer = $(element).closest('.item-container');
+    
+    // Get values from inputs
+    let itemBoxPrice = parentContainer.find('.imgPrice').val();
+    let quantityInBox = parentContainer.find('.qty').val();
+    let averageCost = parentContainer.find('.avrgCostImg').val();
+
+    // Convert Arabic numbers and convert to Number
+    itemBoxPrice = Number(a2e(itemBoxPrice));
+    quantityInBox = Number(a2e(quantityInBox));
+    averageCost = Number(a2e(averageCost));
+
+    const totalItemPrice = quantityInBox * itemBoxPrice;
+
+    // Create table row template
+    const template = `
+    <tr class="itemInTable">
+        <td><label>${itemName}</label></td>
+        <td><label>${itemBoxPrice}</label></td>
+        <td><label>${quantityInBox}</label></td>
+        <td><label>${totalItemPrice}</label></td>
+        <td>
+            <label style="display:none">${averageCost}</label>
+            <div class="removebtn" onclick="removeItem($(this))">x</div>
+        </td>
+    </tr>`;
+
+    // Add to invoice and update
+    $('#invoice tr:last').after(template);
+    updateTotalInvoice();
+}
+*/
+    function addItemFromImg(itemName, clickedElement){
+      var parentContainer = $(clickedElement).closest('.item-container');  // Assuming the button and inputs are inside a div
+
+// Get the values of the inputs within this parent container
+let itemBoxPrice = parentContainer.find('.imgPrice').val();
+let quantityInBox = parentContainer.find('.qty').val();
+let averageCost = parentContainer.find('.avrgCostImg').val();
+
+// Log or process the values
+console.log('Price:', itemBoxPrice);
+console.log('Quantity:', quantityInBox);
+console.log('Average Cost:', averageCost);
+// convertt what needs conversion for arabic JS numbers
+
+  itemBoxPrice=a2e(itemBoxPrice);
+  quantityInBox=a2e(quantityInBox);
+
+/// end of conversion 
+
+// convert strings to numbers
+
+  itemBoxPrice=Number(itemBoxPrice);
+  averageCost=Number(averageCost);
+  quantityInBox=Number(quantityInBox);
+
+// end convert string to numbers
+let totalItemPrice =  quantityInBox*itemBoxPrice;
+
+ 
+
+let totalItemAverageCost =  quantityInBox*averageCost;
+
+
+  let template = `      <tr class="itemInTable">
+                <td><label style="  width: auto;" >${itemName}</label ></td>
+                <td><label style="  width: auto;">${itemBoxPrice}</label ></td>
+                <td><label style="  width: auto;">${quantityInBox}</label ></td>
+                <td><label style="  width: auto;">${totalItemPrice}</label ></td>
+                <td> <label style=" display:none">${averageCost}</label>  <div class="removebtn" onclick="removeItem($(this))">x</div> </td>
+
+                </tr>` ;
+              //  alert(template);
+
+    $('#invoice tr:last').after(template);    
+    clearItemSelect();
+    updateTotalInvoice();     
+
+}
+
+ 
+    
+
+</script>
+
+</html>

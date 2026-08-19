@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Center - Device Tracking System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+
+  <!-- Header -->
+  <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-30 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <i data-lucide="smartphone-charging" class="w-8 h-8 text-blue-500"></i>
+        <h1 class="text-xl font-bold tracking-wide">FixLog <span class="text-xs text-slate-400 font-normal">Service Manager</span></h1>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button onclick="openModal('newIntakeModal')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i> New Intake
+        </button>
+        <button onclick="fetchLatestData()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-lg transition" title="Refresh Data">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Config Warning Banner -->
+    <div id="configWarning" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-xl flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 text-amber-400"></i>
+        <p class="text-sm">Apps Script API URL is not set. Please update the <code>APPS_SCRIPT_URL</code> variable in the script tag.</p>
+      </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <p class="text-xs text-slate-400 uppercase font-semibold">Active Repairs</p>
+        <p id="statActive" class="text-2xl font-bold text-blue-400 mt-1">0</p>
+      </div>
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <p class="text-xs text-slate-400 uppercase font-semibold">Awaiting Parts</p>
+        <p id="statParts" class="text-2xl font-bold text-amber-400 mt-1">0</p>
+      </div>
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <p class="text-xs text-slate-400 uppercase font-semibold">Ready for Pickup</p>
+        <p id="statReady" class="text-2xl font-bold text-emerald-400 mt-1">0</p>
+      </div>
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <p class="text-xs text-slate-400 uppercase font-semibold">Completed Today</p>
+        <p id="statCompleted" class="text-2xl font-bold text-slate-300 mt-1">0</p>
+      </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div class="relative w-full md:w-96">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3.5 text-slate-400"></i>
+        <input type="text" id="searchInput" onkeyup="renderDashboard()" placeholder="Search Ticket, Customer, Phone, IMEI..." 
+               class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+      </div>
+      <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+        <button onclick="setFilter('ALL')" class="filter-btn active bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">All</button>
+        <button onclick="setFilter('Received')" class="filter-btn bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-600">Received</button>
+        <button onclick="setFilter('Diagnosing')" class="filter-btn bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-600">Diagnosing</button>
+        <button onclick="setFilter('Waiting for Parts')" class="filter-btn bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-600">Parts</button>
+        <button onclick="setFilter('Ready')" class="filter-btn bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-600">Ready</button>
+        <button onclick="setFilter('Delivered')" class="filter-btn bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-600">Delivered</button>
+      </div>
+    </div>
+
+    <!-- Tickets Table -->
+    <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-900/50 text-slate-400 uppercase text-xs font-semibold border-b border-slate-700">
+            <tr>
+              <th class="p-4">Ticket</th>
+              <th class="p-4">Device</th>
+              <th class="p-4">Customer</th>
+              <th class="p-4">Current Status</th>
+              <th class="p-4">Latest Notes</th>
+              <th class="p-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ticketsTableBody" class="divide-y divide-slate-700/50">
+            <tr>
+              <td colspan="6" class="p-8 text-center text-slate-500">Loading service logs...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL 1: New Intake -->
+  <div id="newIntakeModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2"><i data-lucide="laptop" class="text-blue-500"></i> New Device Intake</h3>
+        <button onclick="closeModal('newIntakeModal')" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button>
+      </div>
+
+      <form id="intakeForm" class="space-y-3 text-sm">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Customer Name *</label>
+            <input type="text" id="custName" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Phone Number *</label>
+            <input type="text" id="custPhone" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Device Model *</label>
+            <input type="text" id="devModel" placeholder="iPhone 13 / S22 Ultra" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">IMEI / Serial Number</label>
+            <input type="text" id="devImei" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Reported Issue *</label>
+          <input type="text" id="devIssue" placeholder="Screen cracked, not charging..." required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Physical Condition / Passcode</label>
+          <input type="text" id="devCondition" placeholder="Scratches on frame / Pin: 1234" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Estimated Cost ($)</label>
+            <input type="number" id="estCost" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Initial Status</label>
+            <select id="initialStatus" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-200">
+              <option value="Received">Received</option>
+              <option value="Diagnosing">Diagnosing</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-2 border-t border-slate-700">
+          <button type="button" onclick="closeModal('newIntakeModal')" class="px-4 py-2 bg-slate-700 rounded text-slate-300">Cancel</button>
+          <button type="button" onclick="submitIntake()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded font-semibold text-white">Save Intake</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Ticket Timeline & Log Update -->
+  <div id="ticketDetailModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6">
+      
+     <div class="flex justify-between items-start border-b border-slate-700 pb-4">
+  <div>
+    <span id="modalTicketId" class="text-xs bg-blue-500/20 text-blue-400 px-2.5 py-1 rounded font-mono font-bold"></span>
+    <h2 id="modalDeviceTitle" class="text-xl font-bold text-white mt-1"></h2>
+    <p id="modalCustomerInfo" class="text-xs text-slate-400 mt-0.5"></p>
+  </div>
+  <div class="flex items-center gap-3">
+    <!-- Total Cost Display -->
+    <div class="text-right">
+      <span class="text-[10px] text-slate-400 block uppercase">Total Cost</span>
+      <span id="modalTotalCost" class="text-lg font-bold text-emerald-400">$0.00</span>
+    </div>
+    <button onclick="printJobCard()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs flex items-center gap-1.5">
+      <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print
+    </button>
+    <button onclick="closeModal('ticketDetailModal')" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button>
+  </div>
+</div>
+
+      <!-- Add New Status Event Form -->
+      <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/80 space-y-3">
+        <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Append New Event Entry</h4>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">New Status</label>
+            <select id="updateStatusSelect" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-200">
+              <option value="Received">Received</option>
+              <option value="Diagnosing">Diagnosing</option>
+              <option value="Waiting for Parts">Waiting for Parts</option>
+              <option value="Repaired">Repaired / Ready</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Technician / User</label>
+            <input type="text" id="updateTech" placeholder="Tech Name" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-200">
+          </div>
+          <div>
+    <label class="block text-xs text-slate-400 mb-1">Add Cost ($)</label>
+    <input type="number" id="updateCost" step="0.01" placeholder="0.00" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-200">
+  </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Progress Notes / Parts Replaced</label>
+          <textarea id="updateNotes" rows="2" placeholder="Replaced charging port flex, tested current draw..." class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-200"></textarea>
+        </div>
+        <div class="flex justify-end">
+          <button type="button" onclick="submitStatusUpdate()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Log Event
+          </button>
+        </div>
+      </div>
+
+      <!-- Chronological History Timeline -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Historical Audit Log</h4>
+        <div id="timelineContainer" class="space-y-3 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-700">
+          <!-- Timeline entries rendered dynamically -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Printable Hidden Container -->
+  <div id="printArea" class="hidden print:block print:p-8 print:text-black"></div>
+
+  <!-- Logic JavaScript -->
+  <script>
+    // ==========================================
+    // CONFIGURATION
+    // Replace with your published Apps Script Web App URL
+    // ==========================================
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzuumL1Z2x_sdCHgKJ9lmE6xEcYBLqvVaDKjr-k1COOoBZ_XbIdH9RVALn_vLiAuDlO/exec";
+
+    let rawLogEntries = [];
+    let ticketMap = {};
+    let currentFilter = 'ALL';
+    let activeTicketId = null;
+
+    window.onload = () => {
+      lucide.createIcons();
+      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("YOUR_GOOGLE_APPS_SCRIPT")) {
+        document.getElementById('configWarning').classList.remove('hidden');
+      }
+      fetchLatestData();
+    };
+
+    // Fetch data from GAS Backend via GET
+  async function fetchLatestData() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("YOUR_GOOGLE_APPS_SCRIPT")) return;
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    rawLogEntries = data;
+    processRawLogs();
+    renderDashboard();
+  } catch (err) {
+    console.error("Failed fetching service logs:", err);
+  }
+}
+
+    // Process append-only logs to reduce to latest status per Ticket ID
+   function processRawLogs() {
+  ticketMap = {};
+  rawLogEntries.forEach(row => {
+    const [timestamp, ticketId, custName, custPhone, devModel, devImei, issue, status, notes, tech, cost] = row;
+    if (!ticketId || ticketId === "Ticket ID") return;
+
+    const numericCost = parseFloat(cost) || 0;
+
+    if (!ticketMap[ticketId]) {
+      ticketMap[ticketId] = {
+        ticketId,
+        custName,
+        custPhone,
+        devModel,
+        devImei,
+        issue,
+        totalCost: 0,
+        history: []
+      };
+    }
+
+    ticketMap[ticketId].custName = custName || ticketMap[ticketId].custName;
+    ticketMap[ticketId].custPhone = custPhone || ticketMap[ticketId].custPhone;
+    ticketMap[ticketId].devModel = devModel || ticketMap[ticketId].devModel;
+    ticketMap[ticketId].currentStatus = status;
+    ticketMap[ticketId].latestNotes = notes;
+    ticketMap[ticketId].latestTech = tech;
+    ticketMap[ticketId].lastUpdate = timestamp;
+    
+    // Accumulate total cost across all log entries
+    ticketMap[ticketId].totalCost += numericCost;
+
+    ticketMap[ticketId].history.push({
+      timestamp, status, notes, tech, cost: numericCost
+    });
+  });
+}
+
+    // Render Dashboard Table and Metrics
+    function renderDashboard() {
+      const tbody = document.getElementById('ticketsTableBody');
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      const tickets = Object.values(ticketMap).reverse();
+
+      let activeCount = 0, partsCount = 0, readyCount = 0, completedCount = 0;
+
+      tbody.innerHTML = '';
+
+      const filtered = tickets.filter(t => {
+        // Calculate Stats
+        if (t.currentStatus === 'Waiting for Parts') partsCount++;
+        else if (t.currentStatus === 'Ready' || t.currentStatus === 'Repaired') readyCount++;
+        else if (t.currentStatus === 'Delivered') completedCount++;
+        else activeCount++;
+
+        // Apply Status Filter
+        if (currentFilter !== 'ALL' && t.currentStatus !== currentFilter) return false;
+
+        // Apply Search
+        const searchTarget = `${t.ticketId} ${t.custName} ${t.custPhone} ${t.devModel} ${t.devImei}`.toLowerCase();
+        return searchTarget.includes(searchQuery);
+      });
+
+      // Update Dashboard Counters
+      document.getElementById('statActive').innerText = activeCount;
+      document.getElementById('statParts').innerText = partsCount;
+      document.getElementById('statReady').innerText = readyCount;
+      document.getElementById('statCompleted').innerText = completedCount;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500">No service records found.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(t => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-700/30 transition border-b border-slate-700/40">
+            <td class="p-4 font-mono font-bold text-blue-400">${t.ticketId}</td>
+            <td class="p-4">
+              <div class="font-medium text-slate-200">${t.devModel}</div>
+              <div class="text-xs text-slate-400">${t.issue || ''}</div>
+            </td>
+            <td class="p-4">
+              <div class="text-slate-200">${t.custName}</div>
+              <div class="text-xs text-slate-400">${t.custPhone}</div>
+            </td>
+            <td class="p-4">${getStatusBadge(t.currentStatus)}</td>
+            <td class="p-4 text-xs text-slate-300 max-w-xs truncate">${t.latestNotes || 'No notes'}</td>
+            <td class="p-4 text-right">
+              <button onclick="openTicketDetail('${t.ticketId}')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs font-semibold">
+                Manage
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      lucide.createIcons();
+    }
+
+    // Modal Controls
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function setFilter(status) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('bg-blue-600', 'text-white'));
+      renderDashboard();
+    }
+
+    // Submit New Intake Entry
+    async function submitIntake() {
+      const payload = {
+        action: 'logEvent',
+        ticketId: 'TKT-' + Math.floor(100000 + Math.random() * 900000),
+        custName: document.getElementById('custName').value,
+        custPhone: document.getElementById('custPhone').value,
+        devModel: document.getElementById('devModel').value,
+        devImei: document.getElementById('devImei').value,
+        issue: document.getElementById('devIssue').value,
+        status: document.getElementById('initialStatus').value,
+        notes: `Intake logged. Condition: ${document.getElementById('devCondition').value}`,
+        cost: document.getElementById('estCost').value
+      };
+
+      await sendToBackend(payload);
+      closeModal('newIntakeModal');
+      document.getElementById('intakeForm').reset();
+      fetchLatestData();
+    }
+
+    // Open Ticket Detail & Chronological Timeline
+    function openTicketDetail(ticketId) {
+  activeTicketId = ticketId;
+  const t = ticketMap[ticketId];
+  if (!t) return;
+
+  document.getElementById('modalTicketId').innerText = t.ticketId;
+  document.getElementById('modalDeviceTitle').innerText = t.devModel;
+  document.getElementById('modalCustomerInfo').innerText = `${t.custName} | ${t.custPhone} | Serial: ${t.devImei || 'N/A'}`;
+  document.getElementById('modalTotalCost').innerText = `$${t.totalCost.toFixed(2)}`;
+
+  // Clear update input fields
+  document.getElementById('updateNotes').value = '';
+  document.getElementById('updateCost').value = '';
+
+  const timeline = document.getElementById('timelineContainer');
+  timeline.innerHTML = '';
+
+  [...t.history].reverse().forEach(event => {
+    const dateStr = new Date(event.timestamp).toLocaleString();
+    const costLabel = event.cost > 0 ? `<span class="text-emerald-400 font-semibold">+$${event.cost.toFixed(2)}</span>` : '';
+
+    timeline.innerHTML += `
+      <div class="relative pl-8 pb-2">
+        <div class="absolute left-2 top-1.5 w-3 h-3 bg-blue-500 rounded-full ring-4 ring-slate-800"></div>
+        <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700/60 text-xs space-y-1">
+          <div class="flex justify-between items-center text-slate-400">
+            <div class="flex items-center gap-2">
+              ${getStatusBadge(event.status)}
+              ${costLabel}
+            </div>
+            <span>${dateStr}</span>
+          </div>
+          <p class="text-slate-300">${event.notes || 'No description provided.'}</p>
+          ${event.tech ? `<p class="text-slate-500 text-[10px]">Tech: ${event.tech}</p>` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  openModal('ticketDetailModal');
+  lucide.createIcons();
+}
+
+
+
+  async function submitStatusUpdate() {
+  const t = ticketMap[activeTicketId];
+  const costInput = document.getElementById('updateCost');
+  const costValue = costInput && costInput.value ? parseFloat(costInput.value) : 0;
+
+  const payload = {
+    action: 'logEvent',
+    ticketId: activeTicketId,
+    custName: t.custName,
+    custPhone: t.custPhone,
+    devModel: t.devModel,
+    devImei: t.devImei,
+    issue: t.issue,
+    status: document.getElementById('updateStatusSelect').value,
+    notes: document.getElementById('updateNotes').value,
+    tech: document.getElementById('updateTech').value,
+    cost: costValue
+  };
+
+  await sendToBackend(payload);
+  closeModal('ticketDetailModal');
+  fetchLatestData();
+}
+
+    // Send payload to Apps Script POST endpoint
+    async function sendToBackend(payload) {
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors', // Standard cross-origin GAS invocation
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.error("Error writing to Apps Script API:", err);
+      }
+    }
+
+    // Status Badge Component Helper
+    function getStatusBadge(status) {
+      const colors = {
+        'Received': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+        'Diagnosing': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+        'Waiting for Parts': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        'Ready': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        'Repaired': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        'Delivered': 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+      };
+      const style = colors[status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+      return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border ${style}">${status}</span>`;
+    }
+
+    // Print Customer Receipt / Job Card
+    function printJobCard() {
+      const t = ticketMap[activeTicketId];
+      const printWin = window.open('', '_blank');
+      printWin.document.write(`
+        <html>
+          <head>
+            <title>Job Card - ${t.ticketId}</title>
+            <style>
+              body { font-family: monospace; padding: 20px; max-width: 400px; }
+              h2 { text-align: center; margin-bottom: 5px; }
+              .line { border-bottom: 1px dashed #000; margin: 10px 0; }
+              .row { display: flex; justify-content: space-between; font-size: 12px; margin: 4px 0; }
+            </style>
+          </head>
+          <body>
+            <h2>SERVICE RECEIPT</h2>
+            <div class="line"></div>
+            <div class="row"><span>Ticket ID:</span><b>${t.ticketId}</b></div>
+            <div class="row"><span>Customer:</span><span>${t.custName}</span></div>
+            <div class="row"><span>Phone:</span><span>${t.custPhone}</span></div>
+            <div class="row"><span>Device:</span><span>${t.devModel}</span></div>
+            <div class="row"><span>IMEI:</span><span>${t.devImei || 'N/A'}</span></div>
+            <div class="line"></div>
+            <div class="row"><span>Issue:</span><span>${t.issue}</span></div>
+            <div class="row"><span>Est. Cost:</span><span>$${t.cost || 'Pending'}</span></div>
+            <div class="line"></div>
+            <p style="font-size: 10px; text-align: center;">Please retain this receipt for device collection.</p>
+          </body>
+        </html>
+      `);
+      printWin.document.close();
+      printWin.print();
+    }
+  </script>
+</body>
+</html>

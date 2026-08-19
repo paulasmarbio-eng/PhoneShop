@@ -1,0 +1,88 @@
+// service-worker.js
+const CACHE_NAME = 'may-cache-v10';
+const urlsToCache = [
+    '/KSA-AGRI-COM-APP/index.html',
+    '/KSA-AGRI-COM-APP/app.js?t=4',
+    '/KSA-AGRI-COM-APP/style.css',
+    '/KSA-AGRI-COM-APP/navbar.html',
+    '/KSA-AGRI-COM-APP/fallback.html' // Add a fallback page
+];
+
+// Install Service Worker and cache necessary files
+self.addEventListener('install', event => {
+    event.waitUntil(
+        Promise.all([
+            self.skipWaiting(),
+            caches.open(CACHE_NAME).then(cache => {
+                console.log('Opened cache');
+                return cache.addAll(urlsToCache);
+            })
+        ])
+    );
+});
+
+// Activate the service worker and clean up old caches
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('Deleting old cache:', cacheName);
+                        return caches.delete(cacheName); // Use cacheName here
+                    }
+                })
+            );
+        }).then(() => {
+            // Clear local storage when cache is updated
+            clients.matchAll().then(clients => {
+                clients.forEach(client => {
+                    client.postMessage({ action: 'clearLocalStorage' });
+                });
+            });
+        })
+    );
+});
+
+// Cache-then-Network strategy for fetching resources
+self.addEventListener('fetch', event => {
+    if (event.request.method === 'GET') {
+        event.respondWith(
+            fetch(event.request).then(networkResponse => {
+                return caches.open(CACHE_NAME).then(cache => {
+                    cache.put(event.request, networkResponse.clone());
+                    return networkResponse; // Return the network response
+                });
+            }).catch(() => {
+                // If network request fails, try to serve from the cache
+                return caches.match(event.request).then(cachedResponse => {
+                    return cachedResponse || fetch('/fallback.html'); // Provide a fallback page
+                });
+            })
+        );
+    } else {
+    /*  old version  // For non-GET requests (like POST), just fetch from the network
+        event.respondWith(fetch(event.request));
+        */
+        
+     // Handle POST/PUT/DELETE safely
+        event.respondWith(
+            (async () => {
+                try {
+                    const reqClone = event.request.clone(); // clone body
+                    const response = await fetch(reqClone);
+                    return response; // return server response directly
+                } catch (err) {
+                    // If offline, you might want to queue it for background sync instead
+                    return new Response(
+                        JSON.stringify({ ok: false, error: 'Network error' }),
+                        { headers: { 'Content-Type': 'application/json' }, status: 503 }
+                    );
+                }
+            })()
+        );
+    }
+});
+
+
+

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Inventory & Intake System</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .search-container {
+            margin-bottom: 24px;
+        }
+
+        .search-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-container input:focus {
+            border-color: var(--primary);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .empty-row {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 32px 16px;
+        }
+
+        .qty-input {
+            width: 70px;
+            padding: 6px 8px;
+            font-size: 0.95rem;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .btn-delete {
+            background-color: var(--danger);
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .btn-delete:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .summary-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 16px 20px;
+            background-color: #f1f5f9;
+            border-radius: 6px;
+        }
+
+        .summary-details {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .summary-total {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Item Intake & POS Scanner</h2>
+        <p>Scan a barcode or search for parts/covers to populate the ticket.</p>
+    </div>
+
+    <div class="search-container">
+        <label for="itemSearch">Scan Barcode or Search Item:</label>
+        <input 
+            type="text" 
+            id="itemSearch" 
+            list="stockOptions" 
+            placeholder="Type name, ID, or scan barcode..." 
+            autocomplete="off" 
+            autofocus
+        >
+        <datalist id="stockOptions"></datalist>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Item ID</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Unit Cost</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th>Subtotal</th>
+                    <th style="text-align: center;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="cartTableBody">
+                <!-- Dynamically populated rows -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-details">
+            Total Unique Lines: <strong id="totalLines">0</strong> | Total Items: <strong id="totalCount">0</strong>
+        </div>
+        <div class="summary-total">
+            Total: $<span id="grandTotal">0.00</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// Stock master database
+const stockList = [
+    {
+        id: "COV-001",
+        barcode: "6291041583921",
+        type: "iPhone 13 Silicone Cover",
+        cost: 0,
+        averageCost: 5,
+        category: "Covers",
+        imgId: 101
+    },
+    {
+        id: "SCR-002",
+        barcode: "6291041583922",
+        type: "Samsung S22 OLED Screen",
+        cost: 0,
+        averageCost: 25,
+        category: "Screens",
+        imgId: 102
+    },
+    {
+        id: "BAT-003",
+        barcode: "6291041583923",
+        type: "iPhone 12 Battery Replacement",
+        cost: 0,
+        averageCost: 12,
+        category: "Batteries",
+        imgId: 103
+    }
+];
+
+// Active intake list state
+let cart = [];
+
+const searchInput = document.getElementById('itemSearch');
+const dataList = document.getElementById('stockOptions');
+const cartTableBody = document.getElementById('cartTableBody');
+const grandTotalDisplay = document.getElementById('grandTotal');
+const totalLinesDisplay = document.getElementById('totalLines');
+const totalCountDisplay = document.getElementById('totalCount');
+
+// Step 1: Populate dropdown on page load
+function renderDataList() {
+    dataList.innerHTML = '';
+    stockList.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.type; 
+        option.innerText = `[${item.id}] - $${item.averageCost} (${item.category})`;
+        dataList.appendChild(option);
+    });
+}
+
+// Step 2: Handle barcode scanning or item lookup
+function processSearch() {
+    const query = searchInput.value.trim().toLowerCase();
+    if (!query) return;
+
+    const matchedItem = stockList.find(item => 
+        (item.barcode && item.barcode.toLowerCase() === query) ||
+        item.id.toLowerCase() === query ||
+        item.type.toLowerCase() === query
+    );
+
+    if (matchedItem) {
+        addItemToCartOrIntake(matchedItem);
+        searchInput.value = '';
+    }
+}
+
+// Step 3: Add item to cart state (or increment quantity if already listed)
+function addItemToCartOrIntake(item) {
+    const existingIndex = cart.findIndex(cartItem => cartItem.id === item.id);
+    
+    if (existingIndex > -1) {
+        cart[existingIndex].quantity += 1;
+    } else {
+        cart.push({
+            ...item,
+            quantity: 1
+        });
+    }
+    
+    renderCartTable();
+}
+
+// Update quantity from input field change
+function updateQuantity(itemId, newQty) {
+    const qty = parseInt(newQty, 10);
+    const item = cart.find(i => i.id === itemId);
+    
+    if (item) {
+        item.quantity = isNaN(qty) || qty < 1 ? 1 : qty;
+    }
+    renderCartTable();
+}
+
+// Remove item from intake list
+function removeItem(itemId) {
+    cart = cart.filter(item => item.id !== itemId);
+    renderCartTable();
+}
+
+// Render dynamic table rows and summary figures
+function renderCartTable() {
+    if (cart.length === 0) {
+        cartTableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-row">
+                    No items added yet. Type an item name or scan a barcode above.
+                </td>
+            </tr>
+        `;
+        grandTotalDisplay.innerText = '0.00';
+        totalLinesDisplay.innerText = '0';
+        totalCountDisplay.innerText = '0';
+        return;
+    }
+
+    cartTableBody.innerHTML = '';
+    let grandTotal = 0;
+    let itemCount = 0;
+
+    cart.forEach(item => {
+        const subtotal = item.averageCost * item.quantity;
+        grandTotal += subtotal;
+        itemCount += item.quantity;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${item.id}</strong></td>
+            <td>${item.type}</td>
+            <td>${item.category}</td>
+            <td>$${item.averageCost.toFixed(2)}</td>
+            <td style="text-align: center;">
+                <input 
+                    type="number" 
+                    class="qty-input" 
+                    value="${item.quantity}" 
+                    min="1" 
+                    onchange="updateQuantity('${item.id}', this.value)"
+                >
+            </td>
+            <td><strong>$${subtotal.toFixed(2)}</strong></td>
+            <td style="text-align: center;">
+                <button class="btn-delete" onclick="removeItem('${item.id}')">Remove</button>
+            </td>
+        `;
+        cartTableBody.appendChild(row);
+    });
+
+    grandTotalDisplay.innerText = grandTotal.toFixed(2);
+    totalLinesDisplay.innerText = cart.length;
+    totalCountDisplay.innerText = itemCount;
+}
+
+// Event A: Triggered when barcode scanner sends 'Enter'
+searchInput.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        processSearch();
+    }
+});
+
+// Event B: Triggered when user selects directly from the dropdown list
+searchInput.addEventListener('input', function() {
+    const query = this.value.trim().toLowerCase();
+    const exactMatch = stockList.some(item => 
+        item.type.toLowerCase() === query || 
+        (item.barcode && item.barcode.toLowerCase() === query)
+    );
+    
+    if (exactMatch) {
+        processSearch();
+    }
+});
+
+// Focus lock: Keep focus on search input after clicking table controls for rapid scanning
+document.addEventListener('click', (e) => {
+    if (!['INPUT', 'BUTTON'].includes(e.target.tagName)) {
+        searchInput.focus();
+    }
+});
+
+// Initialize on page load
+renderDataList();
+renderCartTable();
+</script>
+
+</body>
+</html>
