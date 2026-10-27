@@ -613,7 +613,17 @@ function startScanner() {
     document.getElementById('scannerModal').style.display = 'flex';
     
     html5QrCode = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+    const config = { 
+    fps: 10, 
+    qrbox: { width: 250, height: 150 },
+    videoConstraints: {
+        facingMode: "environment",
+        width: { min: 1280, ideal: 1920, max: 3840 },
+        height: { min: 720, ideal: 1080, max: 2160 },
+        // Optional: requesting focus mode if supported by the browser engine
+        advanced: [{ focusMode: "continuous" }] 
+    }
+};
     
     html5QrCode.start(
         { facingMode: "environment" }, // Use back camera
