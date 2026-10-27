@@ -594,7 +594,63 @@ $("#totalSumInvoiceServer").val(totalPrice);
         <datalist id="stockOptions"></datalist>
     </div>
 
+     <!-- Modal Container for Camera Viewfinder -->
+<div id="scannerModal" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center; flex-direction:column; box-sizing: border-box; padding: 15px;">
+    <div style="width: 100%; max-width: 400px; background: #fff; padding: 20px; border-radius: 8px; box-sizing: border-box; text-align: center;">
+        <h3 style="margin-top: 0;">Scan Barcode</h3>
+        <div id="reader" style="width: 100%;"></div>
+        <button type="button" onclick="stopScanner()" style="margin-top: 15px; width: 100%; padding: 12px; background: red; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Cancel / Close</button>
+    </div>
+</div>
+  <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
+let html5QrCode = null;
+
+function startScanner() {
+    document.getElementById('scannerModal').style.display = 'flex';
+    
+    html5QrCode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+    
+    html5QrCode.start(
+        { facingMode: "environment" }, // Use back camera
+        config,
+        (decodedText, decodedResult) => {
+            // 1. Success! Barcode found.
+            console.log(`Scanned: ${decodedText}`, decodedResult);
+            
+            // 2. Put the scanned text directly into your existing input field
+            const searchInput = document.getElementById('itemSearch');
+            searchInput.value = decodedText;
+            
+            // 3. Clean up and close the scanner modal
+            stopScanner();
+            
+            // 4. Automatically run your exact search function
+            processSearch();
+        },
+        (errorMessage) => {
+            // Parse error, can be ignored during active scanning frames
+        }
+    ).catch((err) => {
+        alert(`Unable to start camera: ${err}`);
+        stopScanner();
+    });
+}
+
+function stopScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            document.getElementById('scannerModal').style.display = 'none';
+        }).catch(err => {
+            console.error("Failed to clear scanner", err);
+            document.getElementById('scannerModal').style.display = 'none';
+        });
+    } else {
+        document.getElementById('scannerModal').style.display = 'none';
+    }
+}
        const dataList = document.getElementById('stockOptions');
      
 
