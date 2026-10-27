@@ -173,7 +173,7 @@ function getItemSelectOptions(arrayOfLocations){
             category: "Custom"
         };
 
-    } else if (matchedItem.category && (matchedItem.category.toLowerCase() === "maintenance"||matchedItem.category.toLowerCase() === "wish")) {
+    } else if (matchedItem.category && (matchedItem.category.toLowerCase() === "maintenance" || matchedItem.category.toLowerCase() === "wish" ||matchedItem.category.toLowerCase() === "fromwish" ||matchedItem.category.toLowerCase() === "cashtowish")) {
         // Option B: Known item, but belongs to Maintenance category
         let defaultPrice = matchedItem.cost || 0;
         let enteredPrice = prompt(`Enter maintenance charge for "${matchedItem.type}":`, defaultPrice);
@@ -191,12 +191,14 @@ function getItemSelectOptions(arrayOfLocations){
 function addItemToCartOrIntake  (item) {
 let template = `
     <tr class="itemInTable">
+       <td><label style="width: auto;">${item.barcode}</label></td>
         <td><label style="width: auto;">${item.type}</label></td>
         <td><input type="number" step="0.01" class="item-price" value="${item.averageCost}" style="width: 70px;"/></td>
         <td><input type="number" class="item-qty" value="1" min="1" style="width: 70px;"/></td>
         <td><label class="item-subtotal" style="width: auto;">${parseFloat(item.averageCost).toFixed(2)}</label></td>
         <td>
             <label style="display:none">${item.cost}</label>
+            <label style="display:none">${item.category}</label>
             <div class="removebtn" onclick="removeItem($(this))" style="cursor:pointer; color:red;">x</div>
         </td>
     </tr>`;
@@ -511,18 +513,21 @@ function updateTotalInvoice () {
   
 for (var i = 1, row; row = table.rows[i]; i++) {
 let rowItem = {
-  type:row.cells[0].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
-  priceBox:row.cells[1].getElementsByTagName("input")[0].value,
-  quantity:row.cells[2].getElementsByTagName("input")[0].value,
-  totalPrice:row.cells[3].getElementsByTagName("label")[0].innerHTML,
-  averageCost:row.cells[4].getElementsByTagName("label")[0].innerHTML
+  barcode:row.cells[0].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
+  type:row.cells[1].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
+  priceBox:row.cells[2].getElementsByTagName("input")[0].value,
+  quantity:row.cells[3].getElementsByTagName("input")[0].value,
+  totalPrice:row.cells[4].getElementsByTagName("label")[0].innerHTML,
+  averageCost:row.cells[5].getElementsByTagName("label")[0].innerHTML,
+  newitem:row.cells[5].getElementsByTagName("label")[0].innerHTML,
+  category:row.cells[5].getElementsByTagName("label")[1].innerHTML
 }
 
 console.log("row.cells[ erHTML");
 console.log(rowItem);
 invoiceObject.push(rowItem);
 totalPrice+=rowItem.totalPrice*1.00;
-invoiceText+=rowItem.type+" عدد صندوق : "+rowItem.quantity+"  مجموع السعر  : "+ rowItem.totalPrice +"$";
+invoiceText+=rowItem.quantity+" "+rowItem.type+"  ("+ rowItem.totalPrice +"$)";
 invoiceText+=`
 `;
 
@@ -556,10 +561,70 @@ $("#totalSumInvoiceServer").val(totalPrice);
     width: 700px;
 "
         >
+        <button type="button" id="scanBtn" onclick="startScanner()" style="padding: 10px 15px; cursor: pointer;">
+        📷 Scan
+    </button>
         <datalist id="stockOptions"></datalist>
     </div>
+<div id="scannerModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center; flex-direction:column;">
+    <div style="width: 100%; max-width: 400px; background: #fff; padding: 20px; border-radius: 8px; position: relative;">
+        <h3>Scan Barcode</h3>
+        <div id="reader" style="width: 100%;"></div>
+        <button type="button" onclick="stopScanner()" style="margin-top: 15px; width: 100%; padding: 10px; background: red; color: white; border: none; border-radius: 4px;">Cancel / Close</button>
+    </div>
+</div>
 
+<!-- Include html5-qrcode library CDN -->
+<script src="https://unpkg.com/html5-qrcode"></script>
     <script>
+let html5QrCode = null;
+
+function startScanner() {
+    document.getElementById('scannerModal').style.display = 'flex';
+    
+    html5QrCode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+    
+    html5QrCode.start(
+        { facingMode: "environment" }, // Use back camera
+        config,
+        (decodedText, decodedResult) => {
+            // 1. Success! Barcode found.
+            console.log(`Scanned: ${decodedText}`, decodedResult);
+            
+            // 2. Put the scanned text directly into your existing input field
+            const searchInput = document.getElementById('itemSearch');
+            searchInput.value = decodedText;
+            
+            // 3. Clean up and close the scanner modal
+            stopScanner();
+            
+            // 4. Automatically run your exact search function
+            processSearch();
+        },
+        (errorMessage) => {
+            // Parse error, can be ignored during active scanning frames
+        }
+    ).catch((err) => {
+        alert(`Unable to start camera: ${err}`);
+        stopScanner();
+    });
+}
+
+function stopScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            document.getElementById('scannerModal').style.display = 'none';
+        }).catch(err => {
+            console.error("Failed to clear scanner", err);
+            document.getElementById('scannerModal').style.display = 'none';
+        });
+    } else {
+        document.getElementById('scannerModal').style.display = 'none';
+    }
+}
+
        const dataList = document.getElementById('stockOptions');
      
 
@@ -591,6 +656,7 @@ function renderDataList(stockList) {
     <div id="invoiceTable" class="inputItem">
                  <table id="invoice" dir="rtl">
             <tr> 
+               <th> <label >Code</label> </th>
              <th> <label >غرض</label> </th>
              <th> <label style="  width: auto;" >سعر الصندوق </label> </th>
              <th>  <label style="  width: auto;" >كمية </label></th>
@@ -622,6 +688,18 @@ function renderDataList(stockList) {
     <br><br>
     <button class="save" >   يحفظ   </label> </button>
     <br><br> 
+    <div class="inputItem">
+<label>Cash Box  </label>
+    <select id="cashbox" >
+     
+      <option value="CashDrawer" selected>CashDrawer</option> 
+      <option value="Wish">Wish</option> 
+    </select>  
+    
+    </div>
+
+
+     <br><br> 
     <div class="inputItem">
 <label>المنطقة  </label>
     <select id="location" onchange="changeLocHandler($(this))">
@@ -705,32 +783,28 @@ function renderDataList(stockList) {
     let number=a2e ($("#customerPhone").val());
     let convNumber = Number(number);
     let wNumber="+961"+convNumber;
-    let text = ` ${params.startMsgAR}
-    
-    ---------------------------
-    ---------------------------
-
-     ` ;
-  text += `فاتورة بيع رسمية : 
-
+    let text = '' ;
+  text += ` PhoneZone Online Receipt 
 ---------------------------
 `;
 text+=invoiceText;
-text+= `
+/*text+= `
 
 ---------------------------
 
-المجموع :    ${$("#totalSumInvoiceSpan").html()} $
+Total :    ${$("#totalSumInvoiceSpan").html()} $
    
 ---------------------------
-   `;
+   `;*/
 
    text+= `
 ---------------------------
 
-إستلام مبلغ  :    ${$("#totalSumInvoice").val()} $
+Total Paid :    ${$("#totalSumInvoice").val()} $
    
 ---------------------------
+
+Follow us on Instagram https://www.instagram.com/phonezone.lbn/ 
    `;
 
    
@@ -808,6 +882,7 @@ bankLira:a2e(form.totalSumInvoiceLira.value),
  totalHiddenBankAccount:form.totalSumInvoiceServer.value,
  vanNumber:user,
  oldCustomer:oldCustomerBool,
+ cashbox:cashbox.value,
  jsTs:Date.now().toString()
 
 }

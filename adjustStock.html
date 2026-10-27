@@ -40,6 +40,7 @@
 
  <script>
   let items;
+  let cats;
     //get locations
    function getSalesSheetJson (){
 
@@ -72,8 +73,8 @@ processLocationData(jsData.locations);
 processCustomersData(jsData.customers);
 processItemData(jsData.types);
 getCatData(jsData.cat);
-items=jsData.types;
-   
+items=jsData.types;   
+cats=jsData.cat;
 
 console.log("jsData1");
      console.log(jsData)
@@ -205,12 +206,19 @@ let template = `
         <td><label style="width: auto;">${item.barcode}</label></td>
         <td><label style="width: auto;">${item.type}</label><label style="width: auto;">(${item.stockCount})</label></td>
         <td><input type="number" step="0.01"  value="${item.averageCost}" style="width: 70px;"/></td>
-        <td><input type="number" class="item-qty" value="${item.count}"   style="width: 70px;"/></td>
+        <td><input type="number" class="item-qty invoiceElement" value="${item.count}"   style="width: 70px;"/></td>
         <td><label class="item-subtotal" style="width: auto;">${parseFloat(item.cost).toFixed(2)*item.count}</label></td>
         <td>
-            <input type="number" step="0.01"  value="${item.cost}" class="item-price" style="width: 70px;"/> 
+            <input type="number" step="0.01"  value="${item.cost}" class="item-price invoiceElement" style="width: 70px;"/> 
             <label style="display:none">${item.newitem}</label>
             <div class="removebtn" onclick="removeItem($(this))" style="cursor:pointer; color:red;">x</div>
+        </td>
+            <td>
+            <select class="invoiceElement"> ${cats.map(cat => `
+                    <option value="${cat.id}" ${cat.id === item.category ? 'selected' : ''}>
+                        ${cat.id || 'Select Category'}
+                    </option>
+                `).join('')}  </select>
         </td>
     </tr>`;
 
@@ -221,7 +229,7 @@ let template = `
  
 // 1. Listen for changes in Quantity or Price inputs
 
-$(document).on('input', '.item-qty, .item-price', function () {
+$(document).on('input', '.invoiceElement', function () {
     let row = $(this).closest('tr');
     
     // Calculate subtotal for this row
@@ -532,8 +540,9 @@ let rowItem = {
   priceBox:row.cells[2].getElementsByTagName("input")[0].value,
   quantity:row.cells[3].getElementsByTagName("input")[0].value,
   totalPrice:row.cells[4].getElementsByTagName("label")[0].innerHTML,
-  averageCost:row.cells[5].getElementsByTagName("label")[0].innerHTML,
-  newitem:row.cells[5].getElementsByTagName("label")[0].innerHTML
+  averageCost:row.cells[5].getElementsByTagName("input")[0].value,
+  newitem:row.cells[5].getElementsByTagName("label")[0].innerHTML,
+  category:row.cells[6].querySelector("select").value,
 }
 
 console.log("row.cells[ erHTML");
@@ -615,6 +624,7 @@ function renderDataList(stockList) {
              <th>  <label style="  width: auto;" >كمية </label></th>
              <th>  <label style="  width: auto;">السعر الإجمالي</label> </th>
                <th style="  width: auto;">  <label>. </label> </th>
+               <th style="  width: auto;">  <label>Category </label> </th>
               </tr>
 
             </table>

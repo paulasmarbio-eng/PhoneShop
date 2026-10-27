@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xprinter XP-365B Cash Drawer Controller</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px;
+    }
+    .card {
+      background: #ffffff;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+    }
+    h2 { margin-top: 0; color: #1a1a1a; font-size: 1.4rem; }
+    p { color: #666; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.4; }
+    .btn-group { display: flex; flex-direction: column; gap: 10px; }
+    button {
+      background-color: #0066cc;
+      color: white;
+      font-size: 1.05rem;
+      font-weight: 600;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    button:hover { background-color: #0052a3; }
+    button:active { transform: scale(0.98); }
+    button.secondary { background-color: #e0e6ed; color: #333; }
+    button.secondary:hover { background-color: #d0d7e1; }
+    #status {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      padding: 12px;
+      border-radius: 6px;
+      background: #eef4ff;
+      border-left: 4px solid #0066cc;
+      text-align: left;
+      word-break: break-word;
+      min-height: 48px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>XP-365B Drawer Controller</h2>
+    <p>TSPL WebUSB Kick Engine</p>
+    
+    <div class="btn-group">
+      <button id="openTsplBtn">Open Cash Drawer (TSPL Pulse)</button>
+      <button id="openAllBtn" class="secondary">Try Combined TSPL + ESC Burst</button>
+    </div>
+
+    <div id="status">Status: Ready to connect</div>
+  </div>
+
+  <script>
+    async function sendRawUsbData(payload, label) {
+      const status = document.getElementById('status');
+
+      if (!('usb' in navigator)) {
+        status.innerText = 'Error: WebUSB API is not supported in this browser. Use Chrome or Edge.';
+        status.style.borderLeftColor = '#e53e3e';
+        status.style.background = '#fff5f5';
+        return;
+      }
+
+      try {
+        status.innerText = 'Prompting for device selection...';
+        status.style.borderLeftColor = '#0066cc';
+        status.style.background = '#eef4ff';
+
+        const device = await navigator.usb.requestDevice({ filters: [] });
+        await device.open();
+
+        if (device.configuration === null) {
+          await device.selectConfiguration(1);
+        }
+
+        await device.claimInterface(0);
+
+        status.innerText = `Connected to ${device.productName || 'Printer'}. Sending ${label}...`;
+
+        const endpoint = device.configuration.interfaces[0].alternate.endpoints.find(
+          e => e.direction === 'out'
+        );
+
+        if (!endpoint) {
+          throw new Error('Could not locate a valid OUT endpoint.');
+        }
+
+        await device.transferOut(endpoint.endpointNumber, payload);
+
+        status.innerText = `Success: ${label} sent to printer!`;
+        status.style.borderLeftColor = '#38a169';
+        status.style.background = '#f0fff4';
+
+        await device.close();
+
+      } catch (err) {
+        console.error(err);
+        status.innerText = `Error: ${err.message}`;
+        status.style.borderLeftColor = '#e53e3e';
+        status.style.background = '#fff5f5';
+      }
+    }
+
+    // TSPL Standard Drawer Command: CASHBOX 0, 50, 200
+    document.getElementById('openTsplBtn').addEventListener('click', () => {
+      const encoder = new TextEncoder();
+      const tsplCommand = encoder.encode("CASHBOX 0, 50, 200\r\nCASHBOX 1, 50, 200\r\n");
+      sendRawUsbData(tsplCommand, "TSPL Cashbox Command");
+    });
+
+    // Multi-Protocol Burst (TSPL + ESC/POS + ASCII Bell)
+    document.getElementById('openAllBtn').addEventListener('click', () => {
+      const encoder = new TextEncoder();
+      const tsplPart = encoder.encode("CASHBOX 0, 50, 200\r\nCASHBOX 1, 50, 200\r\n");
+      const escPart = new Uint8Array([
+        0x1B, 0x70, 0x00, 0x32, 0xFA, 
+        0x1B, 0x70, 0x01, 0x32, 0xFA, 
+        0x07
+      ]);
+
+      const combined = new Uint8Array(tsplPart.length + escPart.length);
+      combined.set(tsplPart, 0);
+      combined.set(escPart, tsplPart.length);
+
+      sendRawUsbData(combined, "Combined Protocol Burst");
+    });
+  </script>
+</body>
+</html>
