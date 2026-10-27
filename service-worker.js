@@ -1,11 +1,11 @@
 // service-worker.js
 const CACHE_NAME = 'may-cache-v10';
 const urlsToCache = [
-    '/KSA-AGRI-COM-APP/index.html',
-    '/KSA-AGRI-COM-APP/app.js?t=4',
-    '/KSA-AGRI-COM-APP/style.css',
-    '/KSA-AGRI-COM-APP/navbar.html',
-    '/KSA-AGRI-COM-APP/fallback.html' // Add a fallback page
+    '/PhoneShop/index.html',
+    '/PhoneShop/app.js?t=4',
+    '/PhoneShop/style.css',
+    '/PhoneShop/navbar.html',
+    '/PhoneShop/fallback.html' // Add a fallback page
 ];
 
 // Install Service Worker and cache necessary files
