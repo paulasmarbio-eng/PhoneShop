@@ -371,6 +371,20 @@ searchInput.addEventListener('keydown', function(event) {
     }
 });
 
+// 1. Trigger when the user selects an option from the <datalist> (especially common on mobile)
+searchInput.addEventListener('change', function() {
+    if (this.value.trim() !== '') {
+        processSearch();
+    }
+});
+
+// 2. Trigger on physical Enter (PC) or mobile virtual keyboard "Go"/"Search" buttons
+searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault(); // Prevent default form submit if inside a form
+        processSearch();
+    }
+});
 
 });
 
