@@ -23,6 +23,10 @@
       padding-bottom: 40px;
     }
 
+input[type="number"] {
+  direction: ltr;
+  text-align: right; /* Keeps numbers right-aligned for Arabic viewers, but lets cursor typing behave normally from right-to-left */
+}
     .container-mobile {
       padding: 10px 15px;
       max-width: 600px;
@@ -512,6 +516,7 @@
     $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-name', function () {
       let card = $(this).closest('.invoice-card');
       card.find('.card-updatedFlag').text("updated");
+      updateTotalInvoice();
     });
 
     function getLocationSelectOptions(arrayOfLocations) {

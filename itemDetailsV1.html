@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سجل العنصر وإدارة المخزون</title>
+  
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <script src="app.js?t=3" defer></script>
+  <link rel="manifest" href="https://raw.githubusercontent.com/paulasmarbio-eng/PhoneShop/refs/heads/main/manifest.json">
+  <link rel="stylesheet" href="style.css?t=44" />
+
+  <style>
+    body {
+      background: #e5ffe5 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding-bottom: 40px;
+    }
+    
+    input[type="number"] {
+      direction: ltr;
+      text-align: right; 
+    }
+
+    .container-mobile {
+      padding: 10px 15px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Search Bar & Scanner Button */
+    .search-bar-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 15px;
+      width: 100%;
+      flex-direction: row-reverse;
+    }
+
+    #itemSearch {
+      flex: 1;
+      height: 48px;
+      font-size: 16px;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+      width: 100% !important;
+    }
+
+    #scanBtn {
+      height: 48px;
+      padding: 0 16px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    /* Fullscreen Camera Modal */
+    #scannerModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      z-index: 9999;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+
+    .scanner-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      padding: 10px 20px;
+      background: rgba(220, 53, 69, 0.9);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #reader {
+      width: 100%;
+      height: 100%;
+      border: none !important;
+    }
+
+    /* Clean Card Layouts */
+    .invoice-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      border: 1px solid #c3e6cb;
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .invoice-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .invoice-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .invoice-row label {
+      font-size: 14px;
+      font-weight: bold;
+      color: #444;
+      margin-bottom: 0;
+    }
+
+    .invoice-row input, .invoice-row select {
+      height: 38px;
+      font-size: 15px;
+      padding: 4px 8px;
+      text-align: center;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      width: 60%;
+      box-sizing: border-box;
+    }
+
+    .invoice-row input.item-name {
+      text-align: right;
+    }
+
+    /* History Log List Styles */
+    .history-log-item {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 6px;
+      border-right: 4px solid #007bff;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .history-log-item span {
+      display: block;
+      color: #666;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .save-btn-mobile {
+      width: 100% !important;
+      height: 50px;
+      font-size: 18px;
+      font-weight: bold;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      display: block;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    .save-btn-mobile:active {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body dir="rtl" class="body">
+
+  <div class="loading">
+    <div class="loader"></div>
+  </div>
+  <div id="fakeBox"><div id="navbar"></div></div>
+
+  <div class="container-mobile">
+    <h2 class="header" id="h1Val" style="text-align: center; font-weight: bold; margin-top: 15px;">سجل العنصر والمخزون</h2>
+
+    <form id="inForm" onsubmit="event.preventDefault(); saveItemUpdate(this);">
+      <input type="hidden" name="method" value="updateItemType"/>
+
+      <!-- Search & Mobile Barcode Scanner Input -->
+      <div class="search-bar-wrapper">
+        <input 
+          type="text" 
+          id="itemSearch" 
+          list="stockOptions" 
+          placeholder="ابحث عن اسم، كود أو امسح الباركوود..." 
+          autocomplete="off" 
+          autofocus
+        >
+        <button type="button" id="scanBtn" onclick="startScanner()">📷 Scan</button>
+        <datalist id="stockOptions"></datalist>
+      </div>
+
+      <!-- Fullscreen Camera Scanner Modal -->
+      <div id="scannerModal">
+        <button type="button" class="scanner-close-btn" onclick="stopScanner()">✕ إلغاء / إغلاق</button>
+        <div id="reader"></div>
+      </div>
+
+      <!-- Downward Management & Adjustment Card (Hidden until item selected) -->
+      <div id="itemDetailsCard" style="display:none;">
+        
+        <!-- Section 1: Edit Item Details Card -->
+        <div class="invoice-card">
+          <div class="invoice-card-header">
+            <span>تعديل بيانات العنصر الحالي</span>
+            <span id="displayBarcode" style="color: #007bff; font-size: 12px;"></span>
+          </div>
+
+          <input type="hidden" id="editItemId" name="itemId" />
+
+          <div class="invoice-row">
+            <label>الفئة (Category)</label>
+            <select id="editCategory" name="category" class="form-control">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+
+          <div class="invoice-row">
+            <label>اسم الغرض</label>
+            <input type="text" id="editItemName" name="itemName" class="item-name" />
+          </div>
+
+          <div class="invoice-row">
+            <label>سعر التكلفة</label>
+            <input type="number" step="0.01" id="editCost" name="cost" />
+          </div>
+
+          <div class="invoice-row">
+            <label>سعر المبيع</label>
+            <input type="number" step="0.01" id="editSalePrice" name="salePrice" />
+          </div>
+
+          <div class="invoice-row">
+            <label>الكمية الحالية بالمخزون</label>
+            <input type="number" id="editStockCount" name="stockCount" />
+          </div>
+        </div>
+
+        <!-- Section 2: Purchase & Sales History Log Card -->
+        <div class="invoice-card">
+          <div class="invoice-card-header">
+            <span>سجل المشتريات والمبيعات السابقة</span>
+          </div>
+          <div id="historyLogContainer">
+            <p style="text-align: center; color: #777; font-size: 13px;">لا توجد سجلات سابقة متوفرة لهذا العنصر.</p>
+          </div>
+        </div>
+
+        <button type="submit" class="save-btn-mobile" id="saveUpdateBtn">حفظ وتحديث بيانات العنصر</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Main Logic & Utilities -->
+  <script>
+    let items = [];
+    let cats = [];
+
+    function getSalesSheetJson() {
+      let url = 'https://script.google.com/macros/s/AKfycbxnVyT_evlaYhAcPZMElI_cAXAtedMp0fVa0IRPp5nScE7sdpmEwJDj2XzsXSV5ew2Xjw/exec?id=' + encodeURIComponent(id);
+      fetch(url)
+        .then(res => res.json())
+        .then(out => processSalesSheetData(out))
+        .catch(err => console.log(err));
+    }
+
+    function processSalesSheetData(jsData) {
+      checkData();
+      items = jsData.types || [];
+      cats = jsData.cat || [];
+      renderDataList(items);
+      populateCategoryDropdown(cats);
+      $(".loading").hide();
+    }  
+
+    function populateCategoryDropdown(categories) {
+      let html = '';
+      for (let i = 0; i < categories.length; i++) {
+        if(categories[i] && categories[i].id) {
+          html += `<option value="${categories[i].id}">${categories[i].id}</option>`;
+        }
+      }
+      $('#editCategory').html(html);
+    }
+
+    function renderDataList(stockList) {
+      const dataList = document.getElementById('stockOptions');
+      dataList.innerHTML = ''; 
+      stockList.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.type.replace(/&nbsp;/g, ' '); 
+        option.innerText = `التكلفة: $${item.cost || 0} | المبيع: $${item.averageCost || 0} (${item.category})`;
+        dataList.appendChild(option);
+      });
+    }
+
+    function processSearch() {
+      const searchInput = document.getElementById('itemSearch');
+      const query = searchInput.value.trim();
+      if (!query) return;
+
+      const queryLower = query.toLowerCase();
+
+      let matchedItem = items.find(item => 
+        (item.barcode && String(item.barcode).toLowerCase() === queryLower) ||
+        (item.id && String(item.id).toLowerCase() === queryLower) ||
+        (item.type && String(item.type).toLowerCase() === queryLower)
+      );
+
+      if (matchedItem) {
+        loadItemIntoCard(matchedItem);
+      } else {
+        swal("تنبيه", "لم يتم العثور على هذا العنصر في قاعدة البيانات", "warning");
+      }
+      searchInput.value = '';
+    }
+
+    function loadItemIntoCard(item) {
+      $('#itemDetailsCard').fadeIn();
+      
+      $('#editItemId').val(item.id || '');
+      $('#displayBarcode').text('الكود: ' + (item.barcode || 'غير متوفر'));
+      $('#editCategory').val(item.category || '');
+      $('#editItemName').val(item.type ? item.type.replace(/&nbsp;/g, ' ') : '');
+      $('#editCost').val(item.cost || 0);
+      $('#editSalePrice').val(item.averageCost || 0);
+      $('#editStockCount').val(item.count || item.stockCount || 0);
+
+      // Render simulated or fetched transaction history logs if available in item object
+      let logHtml = '';
+      if (item.history && item.history.length > 0) {
+        item.history.forEach(h => {
+          logHtml += `<div class="history-log-item">
+            <strong>${h.type || 'حركة'}</strong> - الكمية: ${h.quantity} | السعر: $${h.price}
+            <span>التاريخ: ${h.date || 'غير محدد'} | الجهة: ${h.party || 'محلي'}</span>
+          </div>`;
+        });
+      } else {
+        logHtml = `<div class="history-log-item" style="border-right-color: #28a745;">
+          <strong>معلومات المخزون الحالي</strong>
+          <span>التكلفة الحالية: $${item.cost || 0} | سعر المبيع: $${item.averageCost || 0}</span>
+        </div>`;
+      }
+      $('#historyLogContainer').html(logHtml);
+    }
+
+    $(document).ready(function() {
+      checkData();
+      getSalesSheetJson();
+
+      const searchInput = document.getElementById('itemSearch');
+      searchInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          processSearch();
+        }
+      });
+
+      searchInput.addEventListener('change', function() {
+        if (this.value.trim() !== '') {
+          processSearch();
+        }
+      });
+    });
+
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.15);
+      } catch (e) {}
+    }
+
+    let html5QrCode = null;
+    function startScanner() {
+      document.getElementById('scannerModal').style.display = 'flex';
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 15, qrbox: { width: 250, height: 180 } },
+        (decodedText) => {
+          if ("vibrate" in navigator) navigator.vibrate(200);
+          playBeep();
+          document.getElementById('itemSearch').value = decodedText;
+          stopScanner();
+          processSearch();
+        },
+        () => {}
+      ).catch((err) => {
+        alert(`تعذر تشغيل الكاميرا: ${err}`);
+        stopScanner();
+      });
+    }
+
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+          document.getElementById('scannerModal').style.display = 'none';
+        }).catch(() => {
+          document.getElementById('scannerModal').style.display = 'none';
+        });
+      } else {
+        document.getElementById('scannerModal').style.display = 'none';
+      }
+    }
+
+    function saveItemUpdate(form) {
+      $('#saveUpdateBtn').prop('disabled', true);
+
+      let objToSave = {
+        method: 'updateItemType',
+        id: $('#editItemId').val(),
+        category: $('#editCategory').val(),
+        type: $('#editItemName').val(),
+        cost: $('#editCost').val(),
+        averageCost: $('#editSalePrice').val(),
+        count: $('#editStockCount').val(),
+        jsTs: Date.now().toString()
+      };
+
+      if (navigator.onLine && typeof sendRequest === 'function') {
+        sendRequest(objToSave);
+      }
+
+      swal("نجح", "تم تحديث بيانات العنصر بنجاح", "success").then(() => {
+        window.location.reload();
+      });
+    }
+  </script>
+</body>
+</html>
