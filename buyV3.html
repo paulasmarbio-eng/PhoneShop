@@ -617,7 +617,25 @@
       $("#totalSumInvoiceLiraSpan").html((totalPrice * 90000).toLocaleString());
       $("#totalSumInvoiceServer").val(totalPrice);
     }
-
+function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // Beep pitch (800Hz)
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volume level
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.15); // Beep duration (150 milliseconds)
+      } catch (e) {
+        console.log("Audio feedback not supported or blocked by browser policy", e);
+      }
+    }
     /* Camera Scanner Script */
     let html5QrCode = null;
 
@@ -644,6 +662,7 @@
           if ("vibrate" in navigator) {
             navigator.vibrate(200);
           }
+          playBeep();
           document.getElementById('itemSearch').value = decodedText;
           stopScanner();
           processSearch();
