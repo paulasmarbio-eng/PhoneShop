@@ -1,1085 +1,762 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <base target="_top">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
-   
-<script src="app.js?t=3" defer></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="https://raw.githubusercontent.com/paulasmarbio-eng/PhoneShop/refs/heads/main/manifest.json">
-<link rel="stylesheet" href="style.css?t=44" />
- 
-<meta charset="UTF-8">
-
- 
-  </head>
-  <body dir="rtl" class="body">
-
-    <div class="loading">
-     <div class="loader"></div>
- </div>
- <div id="fakeBox"> <div id="navbar"></div></div>
-
-    <div class="container" style="margin-top: 80px;">
-      <h1 class="header" id="h1Val">فاتورة البيع الرسمية</h1>
-      <br><br>
-
-      <!-- Your current form and content goes here -->
-
-    </div>
-
-
-
- <script>
-  let items;
-    //get locations
-   function getSalesSheetJson (){
-
-   
-    
-    let url = 'https://script.google.com/macros/s/AKfycbxnVyT_evlaYhAcPZMElI_cAXAtedMp0fVa0IRPp5nScE7sdpmEwJDj2XzsXSV5ew2Xjw/exec?id='+encodeURIComponent(id);
-    fetch(url)
-.then(res => res.json())
-.then(out =>
-  processSalesSheetData(out)
-)
-
- 
- 
-
-
- 
-.catch(err => console.log(err));
-}
-function getCatData (a) {
- for (let i=1; i<=a.length; i++){
-  if(a[i])
-  $("#category").append(`<option value="${a[i].id}"> ${a[i].id} </option>`);
- }
-}
- 
-    function processSalesSheetData (jsData) {
-      checkData();
-processLocationData(jsData.locations);
-processCustomersData(jsData.customers);
-processItemData(jsData.types);
-getCatData(jsData.cat);
-items=jsData.types;
-   
-
-console.log("jsData1");
-     console.log(jsData)
-      console.log("jsData2");
-
-      $(".loading").hide();
-
-      const targetElement = document.getElementById('location');
-
-// Scroll the element into view/*
-/*targetElement.scrollIntoView({
-    behavior: 'smooth',  // Smooth scrolling
-    block: 'center',     // Align the element to the center vertically
-    inline: 'center'     // Align the element to the center horizontally
-});*/
- 
-}  
+<html lang="ar" dir="rtl">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>فاتورة البيع الرسمية</title>
   
-
-    function processLocationData (jsData){
-      console.log("jsData1");
-      getLocationSelectOptions(jsData)
-      console.log("jsData2");
-      
-    }
-
- 
-    function processCustomersData (jsData){
-      console.log("jsData1");
-      getCustomerSelectOptions(jsData);
-      console.log("jsData2");
-    }
-    function processItemData (jsData){
-      getItemSelectOptions (jsData);
-    }
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
    
- 
+  <script src="app.js?t=3" defer></script>
+  <link rel="manifest" href="https://raw.githubusercontent.com/paulasmarbio-eng/PhoneShop/refs/heads/main/manifest.json">
+  <link rel="stylesheet" href="style.css?t=44" />
 
-function getCustomerSelectOptions(arrayOfLocations){
-      let html=`<option  style="display:none"  disabled selected  value="" > </option>`;
-
-      for (i=0; i<arrayOfLocations.length;i++){
-        let optionVal= `<option fpw="${arrayOfLocations[i].fpw}" fpr="${arrayOfLocations[i].fpr}" fpb="${arrayOfLocations[i].fpb}"  phone="${arrayOfLocations[i].phone}" location="${arrayOfLocations[i].location}" value="${arrayOfLocations[i].name}" >${arrayOfLocations[i].name}</option>`;
-        html+=optionVal;
-      }
-
-
-      console.log("html");
-      console.log(html);
-      console.log("htm2");
-   document.getElementById("customerSelect").innerHTML = html;
-
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding-bottom: 40px;
+    }
+    
+    input[type="number"] {
+      direction: ltr;
+      text-align: right; 
     }
 
+    .container-mobile {
+      padding: 10px 15px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
 
-function getItemSelectOptions(arrayOfLocations){
-      let html=`<option  style="display:none"  disabled selected  value="" > </option>`;
+    /* Search Bar & Scanner Button */
+    .search-bar-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 15px;
+      width: 100%;
+      flex-direction: row-reverse;
+    }
 
-      for (i=0; i<arrayOfLocations.length;i++){
-        let optionVal= `<option category="${arrayOfLocations[i].category}" price="${arrayOfLocations[i].cost}" avrgcost="${arrayOfLocations[i].averageCost}" value="${arrayOfLocations[i].id}" >${arrayOfLocations[i].type.replace(/&nbsp;/g, ' ')}</option>`;
-        html+=optionVal;
+    #itemSearch {
+      flex: 1;
+      height: 48px;
+      font-size: 16px;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+      width: 100% !important;
+    }
+
+    #scanBtn {
+      height: 48px;
+      padding: 0 16px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    /* Fullscreen Camera Modal */
+    #scannerModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      z-index: 9999;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+
+    .scanner-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      padding: 10px 20px;
+      background: rgba(220, 53, 69, 0.9);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #reader {
+      width: 100%;
+      height: 100%;
+      border: none !important;
+    }
+
+    /* Clean Card Layouts for Invoice Items */
+    #invoiceContainer {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .invoice-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      border: 1px solid #c3e6cb;
+      position: relative;
+    }
+
+    .invoice-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .invoice-card-header .barcode-lbl {
+      font-size: 13px;
+      color: #666;
+      font-weight: bold;
+    }
+
+    .remove-card-btn {
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .invoice-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .invoice-row label {
+      font-size: 14px;
+      font-weight: bold;
+      color: #444;
+      margin-bottom: 0;
+    }
+
+    .invoice-row input, .invoice-row select {
+      height: 38px;
+      font-size: 15px;
+      padding: 4px 8px;
+      text-align: center;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      width: 60%;
+      box-sizing: border-box;
+    }
+
+    .invoice-row input.item-name {
+      text-align: right;
+    }
+
+    .subtotal-display {
+      font-weight: bold;
+      color: #007bff;
+      font-size: 15px;
+    }
+
+    /* Form Fields Mobile Layout */
+    .form-group-mobile {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .form-group-mobile label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .form-group-mobile select, .form-group-mobile input {
+      width: 100%;
+      height: 42px;
+      font-size: 15px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    .action-icon-btn {
+      height: 42px;
+      width: 48px;
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #f8f9fa;
+      margin-right: 5px;
+    }
+
+    .action-icon-btn img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .save-btn-mobile {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: 50px;
+      font-size: 18px;
+      font-weight: bold;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      display: block;
+      box-sizing: border-box !important;
+      margin: 0 auto;
+      cursor: pointer;
+    }
+
+    .save-btn-mobile:active {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body dir="rtl" class="body">
+
+  <div class="loading">
+    <div class="loader"></div>
+  </div>
+  <div id="fakeBox"><div id="navbar"></div></div>
+
+  <div class="container-mobile">
+    <h2 class="header" id="h1Val" style="text-align: center; font-weight: bold; margin-top: 15px;">فاتورة البيع الرسمية</h2>
+    <br>
+
+    <form id="inForm" onsubmit="event.preventDefault(); geoFindMe(this);">
+      <input type="hidden" name="method" value="add"/>
+
+      <!-- Search & Mobile Barcode Scanner Input -->
+      <div class="search-bar-wrapper">
+        <input 
+          type="text" 
+          id="itemSearch" 
+          list="stockOptions" 
+          placeholder="اكتب اسم، كود أو امسح الباركوود..." 
+          autocomplete="off" 
+          autofocus
+        >
+        <button type="button" id="scanBtn" onclick="startScanner()">📷 Scan</button>
+        <datalist id="stockOptions"></datalist>
+      </div>
+
+      <!-- Fullscreen Camera Scanner Modal -->
+      <div id="scannerModal">
+        <button type="button" class="scanner-close-btn" onclick="stopScanner()">✕ إلغاء / إغلاق</button>
+        <div id="reader"></div>
+      </div>
+
+      <h3 style="font-weight: bold; margin-top: 10px;">عناصر الفاتورة</h3>
+
+      <!-- Clean Card Invoice Container -->
+      <div id="invoiceContainer">
+        <p style="text-align: center; color: #666; padding: 20px;">قم بمسح الباركود أو اختيار عنصر لإضافته إلى الفاتورة.</p>
+      </div>
+
+      <!-- Hidden Table for Compatibility with Existing updateTotalInvoice Logic -->
+      <table id="invoice" style="display:none;">
+        <tr><th>Code</th><th>غرض</th><th>سعر</th><th>كمية</th><th>المجموع</th><th>مخفي</th></tr>
+      </table>
+
+      <!-- Invoice Totals Block -->
+      <div class="form-group-mobile" style="text-align: center; background: #e8f5e9;">
+        <h4 style="margin: 6px 0; color: #28a745; font-weight: bold;">المجموع الكلي: <span id="totalSumInvoiceSpan">0</span> $</h4>
+        <h5 style="color: #555;">أو بالليرة: <span id="totalSumInvoiceLiraSpan">0</span> L.L.</h5>
+        <input type="hidden" id="totalSumInvoiceServer" name="totalSumInvoiceServer"/>
+        <input type="hidden" id="totalSumInvoice" name="totalSumInvoice"/>
+        <input type="hidden" id="vanNumber" name="vanNumber" value="van1" />
+      </div>
+
+      <div class="form-group-mobile">
+        <label>القبض بالليرة (اختياري)</label>
+        <input type="number" id="totalSumInvoiceLira" name="totalSumInvoiceLira" placeholder="المبلغ بالليرة اللبنانية" />
+      </div>
+
+      <div class="form-group-mobile" style="background: transparent; box-shadow: none; padding: 0;">
+        <button type="submit" class="save-btn-mobile">إتمام وحفظ الفاتورة</button>
+      </div>
+
+      <!-- Cash Box Selection -->
+      <div class="form-group-mobile">
+        <label>Cash Box</label>
+        <select id="cashbox">
+          <option value="CashDrawer" selected>CashDrawer</option> 
+          <option value="Wish">Wish</option> 
+        </select>  
+      </div>
+
+      <!-- Location & Customer Selection -->
+      <div class="form-group-mobile">
+        <label>المنطقة</label>
+        <select id="location" onchange="changeLocHandler($(this))">
+          <option value="غير محدد ">غير محدد</option> 
+        </select>
+      </div>
+
+      <div class="form-group-mobile">
+        <label>العميل</label>
+        <select id="customerSelect" onchange="selectCustomerHandler($(this))"></select>
+      </div>
+
+      <!-- New Customer Fields -->
+      <div class="form-group-mobile newCustomer">
+        <h5 style="font-weight: bold;">معلومات العميل الجديد</h5>
+        
+        <div style="margin-bottom: 8px;">
+          <label>المنطقة</label>
+          <input type="text" name="newLocation" id="newLocation"/>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <label>اسم العميل</label>
+          <input type="text" name="customerName" id="customerName"/>
+        </div>
+
+        <div>
+          <label>رقم التليفون</label>
+          <div style="display: flex; gap: 5px;">
+            <input type="tel" name="customerPhone" id="customerPhone" style="flex: 1;"/>
+            <button type="button" class="action-icon-btn" onclick="openWhatsApp()">
+              <img src="wtsp.png" alt="WhatsApp">
+            </button>
+            <button type="button" class="action-icon-btn" onclick="openMaps()">
+              <img src="googlemaps.png" alt="Google Maps">
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" name="alt" />
+      <input type="hidden" name="long"/>
+    </form>
+  </div>
+
+  <script>
+    let items = [];
+    let cats = [];
+
+    function getSalesSheetJson() {
+      let url = 'https://script.google.com/macros/s/AKfycbxnVyT_evlaYhAcPZMElI_cAXAtedMp0fVa0IRPp5nScE7sdpmEwJDj2XzsXSV5ew2Xjw/exec?id=' + encodeURIComponent(id);
+      fetch(url)
+        .then(res => res.json())
+        .then(out => processSalesSheetData(out))
+        .catch(err => console.log(err));
+    }
+
+    function processSalesSheetData(jsData) {
+      checkData();
+      processLocationData(jsData.locations);
+      processCustomersData(jsData.customers);
+      items = jsData.types || [];   
+      cats = jsData.cat || [];
+      renderDataList(items);
+      $(".loading").hide();
+    }  
+
+    function processLocationData(jsData) {
+      getLocationSelectOptions(jsData);
+    }
+
+    function processCustomersData(jsData) {
+      getCustomerSelectOptions(jsData);
+    }
+
+    function getCustomerSelectOptions(arrayOfLocations) {
+      let html = `<option style="display:none" disabled selected value=""></option>`;
+      for (let i = 0; i < arrayOfLocations.length; i++) {
+        html += `<option fpw="${arrayOfLocations[i].fpw}" fpr="${arrayOfLocations[i].fpr}" fpb="${arrayOfLocations[i].fpb}" phone="${arrayOfLocations[i].phone}" location="${arrayOfLocations[i].location}" value="${arrayOfLocations[i].name}">${arrayOfLocations[i].name}</option>`;
       }
+      document.getElementById("customerSelect").innerHTML = html;
+    }
 
-
-      console.log("html");
-      console.log(html);
-      console.log("htm2");
-   //document.getElementById("itemSelect").innerHTML = html;
-
-   renderDataList(arrayOfLocations);
-
+    function renderDataList(stockList) {
+      const dataList = document.getElementById('stockOptions');
+      dataList.innerHTML = ''; 
+      stockList.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.type.replace(/&nbsp;/g, ' '); 
+        option.innerText = `السعر: $${item.averageCost || 0} (${item.category})`;
+        dataList.appendChild(option);
+      });
     }
 
     function processSearch() {
-    const searchInput = document.getElementById('itemSearch');
-    const query = searchInput.value.trim();
-    if (!query) return;
+      const searchInput = document.getElementById('itemSearch');
+      const query = searchInput.value.trim();
+      if (!query) return;
 
-    const queryLower = query.toLowerCase();
+      const queryLower = query.toLowerCase();
 
-    // 1. Search existing items array
-    let matchedItem = items.find(item => 
+      let matchedItem = items.find(item => 
         (item.barcode && String(item.barcode).toLowerCase() === queryLower) ||
         (item.id && String(item.id).toLowerCase() === queryLower) ||
         (item.type && String(item.type).toLowerCase() === queryLower)
-    );
+      );
 
-    let price = 0;
+      let price = 0;
 
-    if (!matchedItem) {
-        // Option A: Custom Item (not found in stock list)
+      if (!matchedItem) {
         let enteredPrice = prompt(`Enter price for custom item "${query}":`, "0");
-        if (enteredPrice === null) return; // Cancelled by user
+        if (enteredPrice === null) return; 
         
         price = parseFloat(enteredPrice) || 0;
 
         matchedItem = {
-            id: "CUSTOM",
-            type: query,
-            averageCost: 1,
-            cost: price,
-            category: "Custom"
+          id: "CUSTOM",
+          barcode: query,
+          type: query,
+          averageCost: price,
+          cost: price,
+          category: "Custom"
         };
-
-    } else if (matchedItem.category && (matchedItem.category.toLowerCase() === "maintenance" || matchedItem.category.toLowerCase() === "wish" ||matchedItem.category.toLowerCase() === "fromwish" ||matchedItem.category.toLowerCase() === "cashtowish")) {
-        // Option B: Known item, but belongs to Maintenance category
-        let defaultPrice = matchedItem.cost || 0;
-        let enteredPrice = prompt(`Enter maintenance charge for "${matchedItem.type}":`, defaultPrice);
-        if (enteredPrice === null) return; // Cancelled by user
-        
-        price = parseFloat(enteredPrice) || 0;
-
-        // Clone item to assign the custom maintenance price without mutating original stock
-        matchedItem = { ...matchedItem, cost: price };
-    }
-
-    addItemToCartOrIntake(matchedItem);
-    searchInput.value = '';
-}
-function addItemToCartOrIntake  (item) {
-let template = `
-    <tr class="itemInTable">
-       <td><label style="width: auto;">${item.barcode}</label></td>
-        <td><label style="width: auto;">${item.type}</label></td>
-        <td><input type="number" step="0.01" class="item-price" value="${item.averageCost}" style="width: 70px;"/></td>
-        <td><input type="number" class="item-qty" value="1" min="1" style="width: 70px;"/></td>
-        <td><label class="item-subtotal" style="width: auto;">${parseFloat(item.averageCost).toFixed(2)}</label></td>
-        <td>
-            <label style="display:none">${item.cost}</label>
-            <label style="display:none">${item.category}</label>
-            <div class="removebtn" onclick="removeItem($(this))" style="cursor:pointer; color:red;">x</div>
-        </td>
-    </tr>`;
-
-    $('#invoice tr:last').after(template);    
-    clearItemSelect();
-    updateTotalInvoice();
-}
- 
-// 1. Listen for changes in Quantity or Price inputs
-$(document).on('input', '.item-qty, .item-price', function () {
-    let row = $(this).closest('tr');
-    
-    // Calculate subtotal for this row
-    let price = parseFloat(row.find('.item-price').val()) || 0;
-    let qty = parseFloat(row.find('.item-qty').val()) || 0;
-    let subtotal = price * qty;
-
-    // Update row subtotal display
-    row.find('.item-subtotal').text(subtotal.toFixed(2));
-
-    updateTotalInvoice();
-    // Recalculate invoice grand total
-  //  updateGrandTotal();
-});
-/*
-// 2. Recalculate the entire invoice total
-function updateGrandTotal() {
-    let grandTotal = 0;
-
-    $('.itemInTable').each(function () {
-        let price = parseFloat($(this).find('.item-price').val()) || 0;
-        let qty = parseFloat($(this).find('.item-qty').val()) || 0;
-        grandTotal += (price * qty);
-    });
-
-    // Update your grand total element (replace #grandTotal with your element's ID)
-    $('#grandTotal').text('$' + grandTotal.toFixed(2));
-}
-
-// 3. Remove item and recalculate
-function removeItem(btn) {
-    btn.closest('tr').remove();
-    updateGrandTotal();
-}*/
-
-    function getLocationSelectOptions(arrayOfLocations){
-      let html=`<option value="غير محدد "> غير محدد  </option>`;
-
-      for (i=0; i<arrayOfLocations.length;i++){
-        let optionVal= `<option value="${arrayOfLocations[i].name}" > ${arrayOfLocations[i].name}</option>`;
-        html+=optionVal;
+      } else {
+        let cat = matchedItem.category ? matchedItem.category.toLowerCase() : "";
+        if (cat === "maintenance" || cat === "wish" || cat === "fromwish" || cat === "cashtowish") {
+          let defaultPrice = matchedItem.averageCost || matchedItem.cost || 0;
+          let enteredPrice = prompt(`Enter maintenance charge for "${matchedItem.type}":`, defaultPrice);
+          if (enteredPrice === null) return; 
+          
+          price = parseFloat(enteredPrice) || 0;
+          matchedItem = { ...matchedItem, averageCost: price, cost: price };
+        } else {
+          price = matchedItem.averageCost || matchedItem.cost || 0;
+        }
       }
 
-
-      console.log("html");
-      console.log(html);
-      console.log("htm2");
-     document.getElementById("location").innerHTML = html;
-
+      addItemToCartOrIntake(matchedItem);
+      searchInput.value = '';
     }
 
+    function addItemToCartOrIntake(item) {
+      if ($('#invoiceContainer p').length) {
+        $('#invoiceContainer').html('');
+      }
 
+      let priceVal = item.averageCost || item.cost || 0;
+      let initialSubtotal = (parseFloat(priceVal) * 1).toFixed(2);
+      
+      let cardTemplate = `
+        <div class="invoice-card itemInTable">
+          <div class="invoice-card-header">
+            <span class="barcode-lbl">الكود: ${item.barcode || item.id || 'N/A'}</span>
+            <button type="button" class="remove-card-btn" onclick="removeItemCard($(this))">حذف</button>
+          </div>
+          
+          <div class="invoice-row">
+            <label>اسم الغرض</label>
+            <input type="text" value="${item.type ? item.type.replace(/&nbsp;/g, ' ') : ''}" class="item-name" style="width:65%;" />
+          </div>
 
-    //get customers 
+          <div class="invoice-row">
+            <label>السعر ($)</label>
+            <input type="number" step="0.01" value="${priceVal}" class="item-price" />
+          </div>
 
-    //get Types and prices
+          <div class="invoice-row">
+            <label>الكمية</label>
+            <input type="number" min="1" value="1" class="item-qty" />
+          </div>
 
-    function saveSale(){
-        // save item sales 
-        
-        // save customer if new, else skip
+          <div class="invoice-row">
+            <label>الإجمالي</label>
+            <span class="subtotal-display item-subtotal">${initialSubtotal}</span>
+          </div>
 
-        //
+          <!-- Hidden elements to maintain sync with underlying table logic -->
+          <div style="display:none;">
+            <label>${item.barcode || item.id || ''}</label>
+            <label>${item.type ? item.type.replace(/&nbsp;/g, ' ') : ''}</label>
+            <label>${item.cost || 0}</label>
+            <label>${item.category || ''}</label>
+          </div>
+        </div>`;
 
+      $('#invoiceContainer').append(cardTemplate);
+
+      let tableRow = `
+        <tr class="itemInTable">
+          <td><label>${item.barcode || item.id || ''}</label></td>
+          <td><label>${item.type ? item.type.replace(/&nbsp;/g, ' ') : ''}</label></td>
+          <td><input type="number" step="any" value="${priceVal}"/></td>
+          <td><input type="number" step="any" value="1"/></td>
+          <td><label class="item-subtotal">${initialSubtotal}</label></td>
+          <td>
+            <label style="display:none">${item.cost || 0}</label>
+            <label style="display:none">${item.category || ''}</label>
+            <div class="removebtn" onclick="removeItem($(this))">x</div>
+          </td>
+        </tr>`;
+      $('#invoice').append(tableRow);
+
+      updateTotalInvoice();
     }
-function sendMessageAfterSuccess (){
 
-}
+    $(document).on('input', '.item-qty, .item-price', function () {
+      let card = $(this).closest('.invoice-card');
+      let index = $('.invoice-card').index(card);
 
-if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition(
-        position => {
-            console.log("Latitude: " + position.coords.latitude);
-            console.log("Longitude: " + position.coords.longitude);
-        },
-        error => {
-            console.error("Geolocation permission denied or error: " + error.message);
+      let price = parseFloat(card.find('.item-price').val()) || 0;
+      let qty = parseFloat(card.find('.item-qty').val()) || 0;
+      let subtotal = price * qty;
+
+      card.find('.item-subtotal').text(subtotal.toFixed(2));
+
+      let tableRow = $('#invoice tr.itemInTable').eq(index);
+      if(tableRow.length) {
+        tableRow.find('input').eq(0).val(price);
+        tableRow.find('input').eq(1).val(qty);
+        tableRow.find('.item-subtotal').text(subtotal.toFixed(2));
+      }
+
+      updateTotalInvoice();
+    });
+
+    function removeItemCard(btn) {
+      let card = btn.closest('.invoice-card');
+      let index = $('.invoice-card').index(card);
+      card.remove();
+      $('#invoice tr.itemInTable').eq(index).remove();
+      if ($('.invoice-card').length === 0) {
+        $('#invoiceContainer').html('<p style="text-align: center; color: #666; padding: 20px;">قم بمسح الباركود أو اختيار عنصر لإضافته إلى الفاتورة.</p>');
+      }
+      updateTotalInvoice();
+    }
+
+    function removeItem(a) {
+      let row = a.closest('tr');
+      let index = $('#invoice tr.itemInTable').index(row);
+      row.remove();
+      $('.invoice-card').eq(index).remove();
+      if ($('.invoice-card').length === 0) {
+        $('#invoiceContainer').html('<p style="text-align: center; color: #666; padding: 20px;">قم بمسح الباركود أو اختيار عنصر لإضافته إلى الفاتورة.</p>');
+      }
+      updateTotalInvoice();
+    }
+
+    function getLocationSelectOptions(arrayOfLocations) {
+      let html = `<option value="غير محدد "> غير محدد  </option>`;
+      for (let i = 0; i < arrayOfLocations.length; i++) {
+        html += `<option value="${arrayOfLocations[i].name}" > ${arrayOfLocations[i].name}</option>`;
+      }
+      document.getElementById("location").innerHTML = html;
+    }
+
+    let html5QrCode = null;
+
+    function startScanner() {
+      document.getElementById('scannerModal').style.display = 'flex';
+      html5QrCode = new Html5Qrcode("reader");
+      const config = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 150 },
+        videoConstraints: {
+          facingMode: "environment",
+          width: { min: 1280, ideal: 1920, max: 3840 },
+          height: { min: 720, ideal: 1080, max: 2160 },
+          advanced: [{ focusMode: "continuous" }] 
         }
-    );
-} else {
-    console.error("Geolocation is not supported by this browser.");
-}
-
-// handling div buttons
-
-console.log("test co11");
-$(document).ready(function(){
- 
-  $(".navbar-toggle").click(function() {
-          $("#navbar-collapse").collapse('toggle');
-        });
-       
- // $(".loading").hide();
-   checkData();
-   // Scroll the page to the far right
-   /*window.addEventListener('load', () => {
-            // Scroll to the far right of the page
-            window.scrollTo({
-                top: 0,
-                left: document.documentElement.scrollWidth,
-                behavior: 'smooth'  // This makes the scrolling smooth
-            });
-        });*/
-
-    getSalesSheetJson();
-$('.myradio').click(function(){
-
-console.log("test co111"+$(this).attr('id'));
-if ($(this).attr('id')=="newCustomerToggel"){
-$(".newCustomer").show();
-$(".oldCustomer").hide();
-
-}
-else {
-$(".newCustomer").show();
-$(".oldCustomer").show();
-}
-$('.myradio').removeClass('myactive');
-$(this).addClass('myactive');
-});
-// show hide dive
-console.log("test co");
-
-const searchInput = document.getElementById('itemSearch');
-
-// Trigger on Barcode Scanner submission (Enter Key)
-searchInput.addEventListener('keydown', function(event) {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        processSearch();
-    }
-});
-
-// 1. Trigger when the user selects an option from the <datalist> (especially common on mobile)
-searchInput.addEventListener('change', function() {
-    if (this.value.trim() !== '') {
-        processSearch();
-    }
-});
-
-// 2. Trigger on physical Enter (PC) or mobile virtual keyboard "Go"/"Search" buttons
-searchInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault(); // Prevent default form submit if inside a form
-        processSearch();
-    }
-});
-
-});
-
-console.log("test co22");
-function changeLocHandler(a) {
-  $("#customerSelect").val([]);
-  let valtoHide= a.find(":selected").attr('value');
-  $("#customerSelect option").hide();
-  $("#customerSelect option[location='"+valtoHide+"']").show();
-
-  if($('#location').prop('selectedIndex')==0){
-    
-    $("#customerSelect option").show();
-    $("#newLocation").prop('disabled', false);
-     $("#newLocation").val('');
-  }
-  else {
-      $("#newLocation").prop('disabled', true);
-      $("#newLocation").val(valtoHide);
-  }
-}
-
-function changeCatHandler(a) {
-  let functionSelecter="#itemSelect";
-  $(functionSelecter).val([]);
-  let valtoHide= a.find(":selected").attr('value');
-  $(functionSelecter+" option").hide();
-  $(functionSelecter+ " option[category='"+valtoHide+"']").show();
-
-  if($('#category').prop('selectedIndex')==0){
-    
-    $(functionSelecter+ " option").show();
-    
-  }
-   
-}
-let oldCustomerBool=false;
- 
-   let fixedProfitw = 6 ;
-   let fixedProfitr = 6 ;
-   let fixedProfitb = 6 ;
-function selectCustomerHandler(a) {
-  //$("#location").val($("#location option:first").val());
-  $("#newLocation").prop('disabled', true);
-  $("#newLocation").val(a.find(":selected").attr('location'));
- oldCustomerBool=true;
-  $("#customerName").val(a.find(":selected").attr('value'));
-  $("#customerPhone").val(a.find(":selected").attr('phone'));
-       $("#customerName").prop('disabled', true);
-   $("#customerPhone").prop('disabled', true);
-    
-  if(oldCustomerBool){
-    fixedProfitw=a.find(":selected").attr('fpw')*1;
-    fixedProfitr=a.find(":selected").attr('fpr')*1;
-    fixedProfitb=a.find(":selected").attr('fpb')*1;
-  }
-}
-
-  function selectTypeHandler(a) {
-    let price= a.find(":selected").attr('price');
-    // Changing fixed profit logic, to profit based on color type based on customer
-  /*let averageCost= a.find(":selected").attr('avrgcost');  
-    let type= a.find(":selected").attr('value');
-    let price= averageCost*1;
-    if(type=="whiteb") {
-price=averageCost*1+fixedProfitw;
-       }
-   else if(type=="redb") {
-price=averageCost*1+fixedProfitr;
-       }
-  else if(type=="baladi") {
-price=averageCost*1+fixedProfitb;
-       }
- */
-  $("#visiblePrice").val(price);
-  $("#averageCost").val(averageCost);
-   //$("#visiblePrice").attr("placeholder", price);
-
-}
-
-function clearCustomerSelect()
-{
-  
-  oldCustomerBool=false;
-  $('#customerSelect').prop('selectedIndex',-1);
-   $("#customerName").val('');
-   $("#customerPhone").val('');
-   $("#newLocation").val('');
-   $("#customerName").prop('disabled', false);
-   $("#newLocation").prop('disabled', false);
-   $("#customerPhone").prop('disabled', false);
-}
-// adding item script
-function clearItemSelect(){
-  $('#itemSelect').prop('selectedIndex',0);
-  $('#visiblePrice').val('');
-  $('#boxQ').prop('selectedIndex',0);
-  
-  $("#averageCost").val('');
-  $('#itemQuantity').val('');
-}
-//translate arabic numbers to english
- const a2e = s => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
-
-function addItem(){
-  let itemName=$('#itemSelect').find(":selected").text();
-  let itemBoxPrice=$('#visiblePrice').val();
-  let itemPkg = $('#boxQ').find(":selected").val();
-  let quantityInBox= $('#itemQuantity').val();
-  let averageCost = $('#averageCost').val(); 
-
-
-// convertt what needs conversion for arabic JS numbers
-
-  itemBoxPrice=a2e(itemBoxPrice);
-  quantityInBox=a2e(quantityInBox);
-
-/// end of conversion 
-
-// convert strings to numbers
-
-  itemBoxPrice=Number(itemBoxPrice);
-  averageCost=Number(averageCost);
-  quantityInBox=Number(quantityInBox);
-
-// end convert string to numbers
-let totalItemPrice =  quantityInBox*itemBoxPrice;
-
-  if(itemPkg=="carton") {
-    totalItemPrice= (totalItemPrice/12).toPrecision(3);
-    quantityInBox= (quantityInBox/12).toPrecision(3);
-  //    totalItemPrice=Math.round((totalItemPrice + Number.EPSILON) * 100) / 100;
- // quantityInBox=Math.round((quantityInBox + Number.EPSILON) * 100) / 100;
-  }
-
-let totalItemAverageCost =  quantityInBox*averageCost;
-
-
-  let template = `      <tr class="itemInTable">
-                <td><label style="  width: auto;" >${itemName}</label ></td>
-                <td><label style="  width: auto;">${itemBoxPrice}</label ></td>
-                <td><label style="  width: auto;">${quantityInBox}</label ></td>
-                <td><label style="  width: auto;">${totalItemPrice}</label ></td>
-                <td> <label style=" display:none">${averageCost}</label>  <div class="removebtn" onclick="removeItem($(this))">x</div> </td>
-
-                </tr>` ;
-              //  alert(template);
-
-    $('#invoice tr:last').after(template);    
-    clearItemSelect();
-    updateTotalInvoice();      
-
-}
-function removeItem (a) {
- 
-   $(a).closest('tr').remove(); 
-   
-    updateTotalInvoice();      
-}
-let invoiceObject = [];
-let invoiceText = ``;
-function updateTotalInvoice () {
-  invoiceObject = [];
-  invoiceText = ``;
-  let table = document.getElementById("invoice");
-  
-  var totalPrice=0;
-  
-for (var i = 1, row; row = table.rows[i]; i++) {
-let rowItem = {
-  barcode:row.cells[0].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
-  type:row.cells[1].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
-  priceBox:row.cells[2].getElementsByTagName("input")[0].value,
-  quantity:row.cells[3].getElementsByTagName("input")[0].value,
-  totalPrice:row.cells[4].getElementsByTagName("label")[0].innerHTML,
-  averageCost:row.cells[5].getElementsByTagName("label")[0].innerHTML,
-  newitem:row.cells[5].getElementsByTagName("label")[0].innerHTML,
-  category:row.cells[5].getElementsByTagName("label")[1].innerHTML
-}
-
-console.log("row.cells[ erHTML");
-console.log(rowItem);
-invoiceObject.push(rowItem);
-totalPrice+=rowItem.totalPrice*1.00;
-invoiceText+=rowItem.quantity+" "+rowItem.type+"  ("+ rowItem.totalPrice +"$)";
-invoiceText+=`
-`;
-
-}
-console.log(totalPrice);
-$("#totalSumInvoiceSpan").html(totalPrice);
-$("#totalSumInvoice").val(totalPrice);
-$("#totalSumInvoiceCollected").val(totalPrice);
-
-$("#totalSumInvoiceLiraSpan").html(totalPrice*90000);
-// add a hidden field to savew the value of the total invoice
-$("#totalSumInvoiceServer").val(totalPrice);
-
-}
-  </script> 
- 
-  <form id="inForm" onsubmit="event.preventDefault(); geoFindMe(this);">
-    <input type=hidden  name="method" value="add"/>
-      <div class="inputItem" >
-
-            <div class="search-container">
-    
-        <input 
-            type="text" 
-            id="itemSearch" 
-            list="stockOptions" 
-            placeholder="Type name, ID, or scan barcode..." 
-            autocomplete="off" 
-            autofocus
-            style="
-    width: 700px;
-"
-        >
-        <button type="button" id="scanBtn" onclick="startScanner()" style="padding: 10px 15px; cursor: pointer;">
-        📷 Scan
-    </button>
-        <datalist id="stockOptions"></datalist>
-    </div>
- <!-- Modal Container for Camera Viewfinder -->
-<div id="scannerModal" style="display:none; inset:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center; flex-direction:column; box-sizing: border-box; padding: 15px;">
-    <div style="width: 100%; max-width: 400px; background: #fff; padding: 20px; border-radius: 8px; box-sizing: border-box; text-align: center;">
-        <h3 style="margin-top: 0;">Scan Barcode</h3>
-        <div id="reader" style="width: 100%;"></div>
-        <button type="button" onclick="stopScanner()" style="margin-top: 15px; width: 100%; padding: 12px; background: red; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Cancel / Close</button>
-    </div>
-</div>
-
-<!-- Include html5-qrcode library CDN -->
-<script src="https://unpkg.com/html5-qrcode"></script>
-    <script>
-let html5QrCode = null;
-
-function startScanner() {
-    document.getElementById('scannerModal').style.display = 'flex';
-    
-    html5QrCode = new Html5Qrcode("reader");
-    const config = { 
-    fps: 10, 
-    qrbox: { width: 250, height: 150 },
-    videoConstraints: {
-        facingMode: "environment",
-        width: { min: 1280, ideal: 1920, max: 3840 },
-        height: { min: 720, ideal: 1080, max: 2160 },
-        // Optional: requesting focus mode if supported by the browser engine
-        advanced: [{ focusMode: "continuous" }] 
-    }
-};
-    
-    html5QrCode.start(
-        { facingMode: "environment" }, // Use back camera
+      };
+      
+      html5QrCode.start(
+        { facingMode: "environment" },
         config,
-        (decodedText, decodedResult) => {
-            // 1. Success! Barcode found.
-            console.log(`Scanned: ${decodedText}`, decodedResult);
-            
-            // 2. Put the scanned text directly into your existing input field
-            const searchInput = document.getElementById('itemSearch');
-            searchInput.value = decodedText;
-            
-            // 3. Clean up and close the scanner modal
-            stopScanner();
-            
-            // 4. Automatically run your exact search function
-            processSearch();
+        (decodedText) => {
+          const searchInput = document.getElementById('itemSearch');
+          searchInput.value = decodedText;
+          stopScanner();
+          processSearch();
         },
-        (errorMessage) => {
-            // Parse error, can be ignored during active scanning frames
-        }
-    ).catch((err) => {
-        alert(`Unable to start camera: ${err}`);
+        () => {}
+      ).catch((err) => {
+        alert(`تعذر تشغيل الكاميرا: ${err}`);
         stopScanner();
-    });
-}
-
-function stopScanner() {
-    if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-            document.getElementById('scannerModal').style.display = 'none';
-        }).catch(err => {
-            console.error("Failed to clear scanner", err);
-            document.getElementById('scannerModal').style.display = 'none';
-        });
-    } else {
-        document.getElementById('scannerModal').style.display = 'none';
+      });
     }
-}
 
-       const dataList = document.getElementById('stockOptions');
-     
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+          document.getElementById('scannerModal').style.display = 'none';
+        }).catch(() => {
+          document.getElementById('scannerModal').style.display = 'none';
+        });
+      } else {
+        document.getElementById('scannerModal').style.display = 'none';
+      }
+    }
 
-// Step 1: Populate dropdown on page load
-function renderDataList(stockList) {
-    dataList.innerHTML = ''; 
-    stockList.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.type.replace(/&nbsp;/g, ' '); 
+    $(document).ready(function(){
+      checkData();
+      getSalesSheetJson();
 
-        option.innerText = ` $${item.averageCost} (${item.category})`;
-        dataList.appendChild(option);
+      const searchInput = document.getElementById('itemSearch');
+      searchInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          processSearch();
+        }
+      });
+
+      searchInput.addEventListener('change', function() {
+        if (this.value.trim() !== '') {
+          processSearch();
+        }
+      });
     });
-}
 
+    function changeLocHandler(a) {
+      $("#customerSelect").val([]);
+      let valtoHide = a.find(":selected").attr('value');
+      $("#customerSelect option").hide();
+      $("#customerSelect option[location='"+valtoHide+"']").show();
 
-    </script>
-           
-                      
-                       
-                             
-                             </div>
-                             <br><br>
-  
-    </div>
-    <div style="width: 500px; ">
-    <div style="width: 100px;"><h1>الفاتورة </h1></div> 
-    </div>
-    <div id="invoiceTable" class="inputItem">
-                 <table id="invoice" dir="rtl">
-            <tr> 
-               <th> <label >Code</label> </th>
-             <th> <label >غرض</label> </th>
-             <th> <label style="  width: auto;" >سعر الصندوق </label> </th>
-             <th>  <label style="  width: auto;" >كمية </label></th>
-             <th>  <label style="  width: auto;">السعر الإجمالي</label> </th>
-               <th style="  width: auto;">  <label>. </label> </th>
-              </tr>
+      if($('#location').prop('selectedIndex')==0){
+        $("#customerSelect option").show();
+        $("#newLocation").prop('disabled', false).val('');
+      } else {
+        $("#newLocation").prop('disabled', true).val(valtoHide);
+      }
+    }
 
-            </table>
-   </div>
+    let oldCustomerBool = false;
 
-    <div class="inputItem" style="width:auto">
-                       <label style="width:auto" >المجموع <span id="totalSumInvoiceSpan"> </span> $ </label>
- 
-   <br><br>
-                         <label style="width:auto">أو 
-                         <span id="totalSumInvoiceLiraSpan"> </span> L.L. </label>
-   <input type="number"  id="totalSumInvoiceLira"  name="totalSumInvoiceLira" placeholder="القبض" />
- 
-   <input type="hidden"  id="totalSumInvoiceServer" name="totalSumInvoiceServer"/>
-   <input type="hidden"  id="vanNumber" name="vanNumber" value=van1 />
-    </div>
-    <br>  <br>
-    <div class="inputItem" style="width:auto">
-                       <label style="width:auto" >القبض $ </label>
-   <input type="number"  id="totalSumInvoice"  step="any" name="totalSumInvoice" placeholder="القبض" />
-  
-    </div>
-    
-    <br><br>
-    <button class="save" >   يحفظ   </label> </button>
-    <br><br> 
-    <div class="inputItem">
-<label>Cash Box  </label>
-    <select id="cashbox" >
-     
-      <option value="CashDrawer" selected>CashDrawer</option> 
-      <option value="Wish">Wish</option> 
-    </select>  
-    
-    </div>
+    function selectCustomerHandler(a) {
+      $("#newLocation").prop('disabled', true).val(a.find(":selected").attr('location'));
+      oldCustomerBool = true;
+      $("#customerName").val(a.find(":selected").attr('value')).prop('disabled', true);
+      $("#customerPhone").val(a.find(":selected").attr('phone')).prop('disabled', true);
+    }
 
+    const a2e = s => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 
-     <br><br> 
-    <div class="inputItem">
-<label>المنطقة  </label>
-    <select id="location" onchange="changeLocHandler($(this))">
-     
-      <option value="غير محدد "> غير محدد  </option> 
-    </select>
- <select id="customerSelect" onchange="selectCustomerHandler($(this))">  </td>
-    </select>
-    
-    </div>
-  <br>
- 
-      <div class="inputItem newCustomer height"  style="
-    height: 300px;
-">
-       <label style="width:auto" >ملء معلومات العميل </label>
- <div style="float:right" > 
-    <label>المنطقة  </label>
-   <input type=text  name="newLocation" id="newLocation"/>
-    </div>
-    <div style="float:right ; margin-left:15px">
-     <label>اسم العميل</label>
-   <input type=text  name="customerName" id="customerName"/>
+    let invoiceObject = [];
+    let invoiceText = ``;
 
-   </div>
-     <div style="float:right">
-       <label>رقم التليفون</label>
-   <input type="tel"  name="customerPhone"  id="customerPhone"/>    <button type="button" class="img-button" onclick="openWhatsApp()">
-    <img src="wtsp.png" alt="WhatsApp">
-  </button>
+    function updateTotalInvoice() {
+      invoiceObject = [];
+      invoiceText = ``;
+      let table = document.getElementById("invoice");
+      var totalPrice = 0;
+      
+      for (var i = 1, row; row = table.rows[i]; i++) {
+        let rowItem = {
+          barcode: row.cells[0].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
+          type: row.cells[1].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
+          priceBox: row.cells[2].getElementsByTagName("input")[0].value,
+          quantity: row.cells[3].getElementsByTagName("input")[0].value,
+          totalPrice: row.cells[4].getElementsByTagName("label")[0].innerHTML,
+          averageCost: row.cells[5].getElementsByTagName("label")[0].innerHTML,
+          newitem: row.cells[5].getElementsByTagName("label")[0].innerHTML,
+          category: row.cells[5].getElementsByTagName("label")[1].innerHTML
+        };
 
-  <button type="button" class="img-button" onclick="openMaps()">
-    <img src="googlemaps.png" alt="googleMaps">
-  </button>
-</div>
+        invoiceObject.push(rowItem);
+        totalPrice += rowItem.totalPrice * 1.00;
+        invoiceText += rowItem.quantity + " " + rowItem.type + "  (" + rowItem.totalPrice + "$)\n";
+      }
 
+      $("#totalSumInvoiceSpan").html(totalPrice.toFixed(2));
+      $("#totalSumInvoice").val(totalPrice.toFixed(2));
+      $("#totalSumInvoiceLiraSpan").html((totalPrice * 90000).toLocaleString());
+      $("#totalSumInvoiceServer").val(totalPrice.toFixed(2));
+    }
 
-  <script>
-    // Function to open the link
     function openWhatsApp() {
-      const phoneNumber = $("#customerPhone").val(); // Replace with the desired phone number
-      const message = "Hello!"; // Replace with a pre-filled message (optional)
-      const encodedMessage = encodeURIComponent(message);
-      const url = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-
-      // Open the WhatsApp link in a new tab
+      const phoneNumber = $("#customerPhone").val();
+      const message = "Hello!";
+      const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
       window.open(url, "_blank");
     }
 
     function openMaps() {
-      const phoneNumber = $("#customerPhone").val(); // Replace with the desired phone number
-      const message = "Hello!"; // Replace with a pre-filled message (optional)
-      const encodedMessage = encodeURIComponent(message);
-      const url = `window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}', '_blank')`;
-
-      // Open the WhatsApp link in a new tab
+      const url = `https://www.google.com/maps`;
       window.open(url, "_blank");
     }
 
-   
+    function onSuccess() {
+      let number = a2e($("#customerPhone").val());
+      let wNumber = "+961" + Number(number);
+      let text = `PhoneZone Online Receipt \n---------------------------\n` + invoiceText + `\n---------------------------\nTotal Paid : ${$("#totalSumInvoice").val()} $\n---------------------------\nFollow us on Instagram https://www.instagram.com/phonezone.lbn/ `;
 
-
-  </script>
-    </div>
-    <br>  <br>
-  
-       
-   
-    
-   <input type="hidden"  name="alt" />
-   <input type="hidden"  name="long"/>
-    </form>
-  
-</body>
-<script>
-
-  
-
-
-  function onSuccess() {
-    let number=a2e ($("#customerPhone").val());
-    let convNumber = Number(number);
-    let wNumber="+961"+convNumber;
-    let text = '' ;
-  text += ` PhoneZone Online Receipt 
----------------------------
-`;
-text+=invoiceText;
-/*text+= `
-
----------------------------
-
-Total :    ${$("#totalSumInvoiceSpan").html()} $
-   
----------------------------
-   `;*/
-
-   text+= `
----------------------------
-
-Total Paid :    ${$("#totalSumInvoice").val()} $
-   
----------------------------
-
-Follow us on Instagram https://www.instagram.com/phonezone.lbn/ 
-   `;
-
-   
-  // alert (encodeURIComponent(text));
-//  alert(invoiceText);
-
- swal({
-title: 'نجح',
-text: ' تمت العملية بنجاح، شكرا لك'+' \n'+invoiceText,
-icon: "success",
-    closeOnClickOutside: false,
-    closeOnEsc: false,
-buttons: {
-    cancel: "أغلقه",
-  confirm: " أرسل رسالة",
- 
-},
-})
-.then((willSendWhatsap) => {
-if (willSendWhatsap) {
-  window.open('https://wa.me/'+wNumber+'?text='+encodeURIComponent(text), '_blank');
-  swal(' مرسل', {
-    icon: "success",
-    closeOnClickOutside: false,
-    closeOnEsc: false
-  }).then(function(){ 
- reLoad();
- });
-} else {
-  swal(' شكرًا لك').then(function(){ 
-reLoad();
- });
-}
-});
+      swal({
+        title: 'نجح',
+        text: ' تمت العملية بنجاح، شكرا لك \n' + invoiceText,
+        icon: "success",
+        closeOnClickOutside: false,
+        closeOnEsc: false,
+        buttons: { cancel: "أغلقه", confirm: " أرسل رسالة" },
+      }).then((willSendWhatsap) => {
+        if (willSendWhatsap) {
+          window.open('https://wa.me/' + wNumber + '?text=' + encodeURIComponent(text), '_blank');
+          reLoad();
+        } else {
+          reLoad();
+        }
+      });
     }
 
-   
+    function geoFindMe(form) {
+      $(".save-btn-mobile").prop('disabled', true);
+      
+      let objToSave = {
+        method: 'add',
+        e: id,
+        arrayOfItems: invoiceObject,
+        alt: form.alt.value || '',
+        longi: form.long.value || '',
+        name: form.customerName.value,
+        phone: a2e(form.customerPhone.value),
+        location: form.newLocation.value,
+        bankDollar: a2e(form.totalSumInvoice.value),
+        bankLira: a2e(form.totalSumInvoiceLira.value),
+        totalHiddenBankAccount: form.totalSumInvoiceServer.value,
+        vanNumber: user,
+        oldCustomer: oldCustomerBool,
+        cashbox: $('#cashbox').val(),
+        jsTs: Date.now().toString()
+      };
 
-
- function geoFindMe(form) {
-$(".save").prop('disabled', true);
-     geolocation = new Promise((resolve, reject) => {
-navigator.geolocation.watchPosition(
-  position => { resolve(position.coords) },
-  error => { reject(error) }
-)
-}).catch(error => error)
-    
-
-    
-
-      if(!navigator.geolocation) {
-      } else {
-       new Promise(function(resolve,reject){
-
-resolve(geolocation);
-
-}).then(function(coords){
-    console.log("koukou in then 4");
-  form.alt.value=coords.latitude;
-  form.long.value=coords.longitude;
-}).then(function(){ 
-    console.log("koukou in then 5");
-let objToSave = {
-    method:'add',
-    e:id,
-  arrayOfItems:invoiceObject,
-  alt:form.alt.value,
-  longi:form.long.value,
-  name:form.customerName.value,
-  phone:a2e(form.customerPhone.value),
-  location:form.newLocation.value,
- bankDollar:a2e(form.totalSumInvoice.value),
-bankLira:a2e(form.totalSumInvoiceLira.value),
- totalHiddenBankAccount:form.totalSumInvoiceServer.value,
- vanNumber:user,
- oldCustomer:oldCustomerBool,
- cashbox:cashbox.value,
- jsTs:Date.now().toString()
-
-}
-
-console.log("koukou in then 7");
-       if (navigator.onLine) {
+      if (navigator.onLine) {
         sendRequest(objToSave);
-       console.log( 'Data sent successfully!');
-       
-       console.log( objToSave);
-    } else {
-        // Save the request in IndexedDB if offline
+      } else {
         saveRequest(objToSave);
-          console.log('Offline. Data will be sent when online.');
-    }
-
-     onSuccess();
-  
-// fetch the data to google api 
-
-//run the onSuccess handler in the resolve promise
-
-// handle the save later google.script.run.withSuccessHandler(onSuccess).saveToGoogleSheet(objToSave)
-});
-
       }
+
+      onSuccess();
     }
 
-function reLoad() {
-  // handle reload
-  window.location.reload();
-}
-
-</script>
-  <!-- Popup Modal -->
-  <div id="myModal" class="modal">
-    <div class="modal-content">
-        <h3>ألبوم الصور </h3>
-        <div id="modalContent"></div>
-        </div>
-    
-</div>
-
-<script>
-    $(document).ready(function() {
-        // Open Modal
-        $("#openModal").click(function() {
-            $("#myModal").fadeIn();
-            const targetElement = document.getElementById('myModal');
-
-// Scroll the element into view
-/*targetElement.scrollIntoView({
-    behavior: 'smooth',  // Smooth scrolling
-    block: 'center',     // Align the element to the center vertically
-    inline: 'center'     // Align the element to the center horizontally
-});*/
-            fillModalContent();
-        });
-
-        // Close Modal
-        $(document).on('click', '.closeModal', function() {
-    $('#myModal').fadeOut();
-});
-
-         
-    });
-
-    function fillModalContent (){ 
-      let template = ``;
-    for (let i = 0; i < items.length; i++) { // Added 'let' for proper scoping
-        template += `
-        <div class="item-container">
-          ${items[i].type} : <br>
-            <img src="https://drive.google.com/thumbnail?id=${items[i].imgId}&sz=w1000" alt="Item Image"><br>
-            <label>سعر</label>
-            <input type="number" class="imgPrice" value="${items[i].cost}"  style="width:80px;">
-            <label>كمية</label>
-            <input type="number" class="qty" value=""  style="width:80px;">
-            <input type="hidden" class="avrgCostImg" value="${items[i].averageCost}">
-            <div class="addbtnFromImg" onclick="addItemFromImg('${items[i].type}', this)">+</div> <!-- Added 'this' parameter -->
-            <button class="closeModal">Close</button>
-        </div> <br> <br>`;
+    function reLoad() {
+      window.location.reload();
     }
-    $("#modalContent").html(template);
-}
-/*
-function addItemFromImg(itemName, element) { // Added 'element' parameter
-    // Get the parent container of the clicked button
-    const parentContainer = $(element).closest('.item-container');
-    
-    // Get values from inputs
-    let itemBoxPrice = parentContainer.find('.imgPrice').val();
-    let quantityInBox = parentContainer.find('.qty').val();
-    let averageCost = parentContainer.find('.avrgCostImg').val();
-
-    // Convert Arabic numbers and convert to Number
-    itemBoxPrice = Number(a2e(itemBoxPrice));
-    quantityInBox = Number(a2e(quantityInBox));
-    averageCost = Number(a2e(averageCost));
-
-    const totalItemPrice = quantityInBox * itemBoxPrice;
-
-    // Create table row template
-    const template = `
-    <tr class="itemInTable">
-        <td><label>${itemName}</label></td>
-        <td><label>${itemBoxPrice}</label></td>
-        <td><label>${quantityInBox}</label></td>
-        <td><label>${totalItemPrice}</label></td>
-        <td>
-            <label style="display:none">${averageCost}</label>
-            <div class="removebtn" onclick="removeItem($(this))">x</div>
-        </td>
-    </tr>`;
-
-    // Add to invoice and update
-    $('#invoice tr:last').after(template);
-    updateTotalInvoice();
-}
-*/
-    function addItemFromImg(itemName, clickedElement){
-      var parentContainer = $(clickedElement).closest('.item-container');  // Assuming the button and inputs are inside a div
-
-// Get the values of the inputs within this parent container
-let itemBoxPrice = parentContainer.find('.imgPrice').val();
-let quantityInBox = parentContainer.find('.qty').val();
-let averageCost = parentContainer.find('.avrgCostImg').val();
-
-// Log or process the values
-console.log('Price:', itemBoxPrice);
-console.log('Quantity:', quantityInBox);
-console.log('Average Cost:', averageCost);
-// convertt what needs conversion for arabic JS numbers
-
-  itemBoxPrice=a2e(itemBoxPrice);
-  quantityInBox=a2e(quantityInBox);
-
-/// end of conversion 
-
-// convert strings to numbers
-
-  itemBoxPrice=Number(itemBoxPrice);
-  averageCost=Number(averageCost);
-  quantityInBox=Number(quantityInBox);
-
-// end convert string to numbers
-let totalItemPrice =  quantityInBox*itemBoxPrice;
-
- 
-
-let totalItemAverageCost =  quantityInBox*averageCost;
-
-
-  let template = `      <tr class="itemInTable">
-                <td><label style="  width: auto;" >${itemName}</label ></td>
-                <td><label style="  width: auto;">${itemBoxPrice}</label ></td>
-                <td><label style="  width: auto;">${quantityInBox}</label ></td>
-                <td><label style="  width: auto;">${totalItemPrice}</label ></td>
-                <td> <label style=" display:none">${averageCost}</label>  <div class="removebtn" onclick="removeItem($(this))">x</div> </td>
-
-                </tr>` ;
-              //  alert(template);
-
-    $('#invoice tr:last').after(template);    
-    clearItemSelect();
-    updateTotalInvoice();     
-
-}
-
- 
-    
-
-</script>
-
+  </script>
+</body>
 </html>
