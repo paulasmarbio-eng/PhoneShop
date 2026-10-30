@@ -438,7 +438,7 @@
       let template = `
         <tr class="itemInTable">
           <td><label style="width: auto;">${item.barcode}</label></td>
-          <td><label style="width: auto;" class="item-name">${item.type}</label></td>
+          <td><input type="text" value="${item.type}" style="width: auto;" class="item-name" /> </td>
           <td><input type="number" step="0.01" class="item-sale-price" value="${item.averageCost}" style="width: 60px;"/></td>
           <td><input type="number" class="item-qty invoiceElement" value="${item.count}" min="1" style="width: 50px;"/></td>
           <td><label class="item-subtotal invoiceElement" style="width: auto;">${(parseFloat(item.cost) * item.count).toFixed(2)}</label></td>
@@ -596,7 +596,7 @@
       for (let i = 1, row; row = table.rows[i]; i++) {
         let rowItem = {
           barcode: row.cells[0].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
-          type: row.cells[1].getElementsByTagName("label")[0].innerHTML.replace(/&nbsp;/g, ' '),
+          type: row.cells[1].getElementsByTagName("input")[0].value.replace(/&nbsp;/g, ' '),
           priceBox: row.cells[2].getElementsByTagName("input")[0].value,
           quantity: row.cells[3].getElementsByTagName("input")[0].value,
           totalPrice: row.cells[4].getElementsByTagName("label")[0].innerHTML,
