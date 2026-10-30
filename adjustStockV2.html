@@ -4,25 +4,26 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>التحقق من المخزون / تعديل المخزون</title>
+  <title>التحقق من المخزون / تعديل المخزون - V2</title>
   
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" defer></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
-
+   
   <script src="app.js?t=3" defer></script>
   <link rel="manifest" href="https://raw.githubusercontent.com/paulasmarbio-eng/PhoneShop/refs/heads/main/manifest.json">
   <link rel="stylesheet" href="style.css?t=44" />
-
+ 
+  <meta charset="UTF-8">
   <style>
     body {
       background: #e5ffe5 !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       padding-bottom: 40px;
     }
-    
+ 
     input[type="number"] {
       direction: ltr;
       text-align: right; 
@@ -176,7 +177,7 @@
     .subtotal-display {
       font-weight: bold;
       color: #007bff;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     /* Form Fields Mobile Layout */
@@ -240,16 +241,15 @@
     }
   </style>
 </head>
-
 <body dir="rtl" class="body">
 
   <div class="loading">
     <div class="loader"></div>
   </div>
-  <div id="fakeBox"><div id="navbar"></div></div>
+  <div id="fakeBox"> <div id="navbar"></div></div>
 
   <div class="container-mobile">
-    <h2 class="header" id="h1Val" style="text-align: center; font-weight: bold; margin-top: 15px;">التحقق من المخزون</h2>
+    <h2 class="header" id="h1Val" style="text-align: center; font-weight: bold; margin-top: 15px;">التحقق من المخزون / تعديل المخزون - V2</h2>
 
     <form id="inForm" onsubmit="event.preventDefault(); geoFindMe(this);">
       <input type="hidden" name="method" value="add"/>
@@ -279,22 +279,17 @@
       <!-- Clean Card Invoice Container -->
       <div id="invoiceContainer"></div>
 
-      <!-- Invoice Totals Block -->
+      <!-- Invoice Totals Block (Dual Totals: Cost & Retail Sale Price) -->
       <div class="form-group-mobile" style="text-align: center; background: #e8f5e9;">
-        <h4>المجموع: <span id="totalSumInvoiceSpan">0</span> $</h4>
-        <h5 style="color: #555;">أو <span id="totalSumInvoiceLiraSpan">0</span> L.L.</h5>
-        <input type="number" id="totalSumInvoiceLira" name="totalSumInvoiceLira" placeholder="القبض بالليرة" />
+        <h5 style="margin: 4px 0; color: #333;">إجمالي التكلفة: <span id="totalCostSumSpan">0</span> $</h5>
+        <h4 style="margin: 6px 0; color: #28a745; font-weight: bold;">إجمالي سعر المبيع: <span id="totalSaleSumSpan">0</span> $</h4>
+        <h5 style="color: #555;">أو بالليرة (المبيع): <span id="totalSumInvoiceLiraSpan">0</span> L.L.</h5>
         <input type="hidden" id="totalSumInvoiceServer" name="totalSumInvoiceServer"/>
         <input type="hidden" id="vanNumber" name="vanNumber" value="van1" />
       </div>
 
-      <div class="form-group-mobile">
-        <label>القبض $</label>
-        <input type="number" id="totalSumInvoice" step="any" name="totalSumInvoice" placeholder="القبض بالدولار" />
-      </div>
-
       <div class="form-group-mobile" style="background: transparent; box-shadow: none; padding: 0;">
-        <button type="submit" class="save-btn-mobile">حفظ الفاتورة</button>
+        <button type="submit" class="save-btn-mobile">حفظ التعديلات</button>
       </div>
 
       <!-- Location & Customer Selection -->
@@ -351,10 +346,9 @@
     </form>
   </div>
 
-  <!-- Main Logic & Utilities -->
   <script>
-    let items;
-    let cats;
+    let items = [];
+    let cats = [];
 
     function getSalesSheetJson() {
       let url = 'https://script.google.com/macros/s/AKfycbxnVyT_evlaYhAcPZMElI_cAXAtedMp0fVa0IRPp5nScE7sdpmEwJDj2XzsXSV5ew2Xjw/exec?id=' + encodeURIComponent(id);
@@ -364,20 +358,13 @@
         .catch(err => console.log(err));
     }
 
-    function getCatData(a) {
-      for (let i = 1; i <= a.length; i++) {
-        if (a[i]) $("#category").append(`<option value="${a[i].id}">${a[i].id}</option>`);
-      }
-    }
-
     function processSalesSheetData(jsData) {
       checkData();
       processLocationData(jsData.locations);
       processCustomersData(jsData.customers);
-      processItemData(jsData.types);
-      getCatData(jsData.cat);
-      items = jsData.types;   
-      cats = jsData.cat;
+      items = jsData.types || [];   
+      cats = jsData.cat || [];
+      renderDataList(items);
 
       $(".loading").hide();
     }  
@@ -390,10 +377,6 @@
       getCustomerSelectOptions(jsData);
     }
 
-    function processItemData(jsData) {
-      getItemSelectOptions(jsData);
-    }
-
     function getCustomerSelectOptions(arrayOfLocations) {
       let html = `<option style="display:none" disabled selected value=""></option>`;
       for (let i = 0; i < arrayOfLocations.length; i++) {
@@ -402,8 +385,15 @@
       document.getElementById("customerSelect").innerHTML = html;
     }
 
-    function getItemSelectOptions(arrayOfLocations) {
-      renderDataList(arrayOfLocations);
+    function renderDataList(stockList) {
+      const dataList = document.getElementById('stockOptions');
+      dataList.innerHTML = ''; 
+      stockList.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.type.replace(/&nbsp;/g, ' '); 
+        option.innerText = `التكلفة: $${item.cost || 0} | المبيع: $${item.averageCost || 0} (${item.category})`;
+        dataList.appendChild(option);
+      });
     }
 
     function processSearch() {
@@ -413,7 +403,6 @@
 
       const queryLower = query.toLowerCase();
 
-      // Search existing items array
       let matchedItem = items.find(item => 
         (item.barcode && String(item.barcode).toLowerCase() === queryLower) ||
         (item.id && String(item.id).toLowerCase() === queryLower) ||
@@ -421,22 +410,18 @@
       );
 
       if (!matchedItem) {
-        // Popup-free instant addition for custom/unknown items
         matchedItem = {
           id: "CUSTOM",
           barcode: query,
           type: query,
           averageCost: 0,
           cost: 0,
-          stockCount: 0,
-          category: cats && cats.length > 0 ? cats[0].id : "General",
           count: 1,
+          category: cats && cats.length > 0 ? cats[0].id : "General",
           newitem: "new"
         };
-      } else if (matchedItem.category && matchedItem.category.toLowerCase() === "maintenance") {
-        matchedItem = { ...matchedItem, count: 1 };
       } else {
-        matchedItem = { ...matchedItem, count: 1 };
+        matchedItem = { ...matchedItem, count: matchedItem.count !== undefined ? matchedItem.count : (matchedItem.stockCount || 1) };
       }
 
       addItemToCartOrIntake(matchedItem);
@@ -444,11 +429,15 @@
     }
 
     function addItemToCartOrIntake(item) {
-      let stockDisplay = item.stockCount !== undefined ? ` (الكمية الحالية: ${item.stockCount})` : '';
+      let stockVal = item.count !== undefined ? item.count : 0;
+      let costVal = item.cost || 0;
+      let saleVal = item.averageCost || 0;
+      let initialSaleSubtotal = (parseFloat(saleVal) * parseFloat(stockVal)).toFixed(2);
+      
       let cardTemplate = `
         <div class="invoice-card itemInTable">
           <div class="invoice-card-header">
-            <span class="barcode-lbl">الكود: ${item.barcode || 'N/A'}${stockDisplay}</span>
+            <span class="barcode-lbl">الكود: ${item.barcode || 'N/A'}</span>
             <button type="button" class="remove-card-btn" onclick="removeItem($(this))">حذف</button>
           </div>
           
@@ -467,60 +456,58 @@
           <!-- 2. Item Name -->
           <div class="invoice-row">
             <label>اسم الغرض</label>
-            <input type="text" value="${item.type}" class="item-name" />
+            <input type="text" value="${item.type ? item.type.replace(/&nbsp;/g, ' ') : ''}" class="item-name" />
           </div>
 
           <!-- 3. Cost Price -->
           <div class="invoice-row">
-            <label>سعر المبيع / التكلفة</label>
-            <input type="number" step="0.01" value="${item.averageCost || 0}" class="item-sale-price" />
+            <label>سعر التكلفة</label>
+            <input type="number" step="0.01" value="${costVal}" class="item-price invoiceElement" />
           </div>
 
-          <!-- 4. Quantity -->
+          <!-- 4. Sell Price -->
           <div class="invoice-row">
-            <label>الكمية</label>
-            <input type="number" class="item-qty invoiceElement" value="${item.stockCount || 0}" data-original="${item.stockCount || 0}" />
+            <label>سعر المبيع</label>
+            <input type="number" step="0.01" value="${saleVal}" class="item-sale-price invoiceElement" />
           </div>
 
-          <!-- 5. Total -->
+          <!-- 5. Quantity -->
           <div class="invoice-row">
-            <label>المجموع الإجمالي</label>
-            <span class="subtotal-display invoiceElement">${((parseFloat(item.cost || 0) * (item.count || 1))).toFixed(2)}</span>
+            <label>الكمية الحالية</label>
+            <input type="number" class="item-qty invoiceElement" value="${stockVal}" data-original="${stockVal}" />
           </div>
 
-          <!-- 6. Price (Cost Price input matching adjustStock schema) -->
-          <div class="invoice-row" style="display:none;">
-            <label>التكلفة المخفية</label>
-            <input type="number" step="0.01" value="${item.cost || 0}" class="item-price invoiceElement" />
+          <!-- 6. Retail Subtotal Display -->
+          <div class="invoice-row">
+            <label>إجمالي المبيع</label>
+            <span class="subtotal-display invoiceElement">${initialSaleSubtotal}</span>
           </div>
 
           <!-- Hidden fields required for backend data parsing -->
           <div style="display:none;">
-            <span class="card-barcode">${item.barcode}</span>
+            <span class="card-barcode">${item.barcode || ''}</span>
             <span class="card-newitem">${item.newitem || ''}</span>
             <span class="card-updatedFlag">no</span>
           </div>
         </div>`;
 
       $('#invoiceContainer').append(cardTemplate);   
-      clearItemSelect();
       updateTotalInvoice();
     } 
 
     $(document).on('input', '.invoiceElement', function () {
       let card = $(this).closest('.invoice-card');
-      let price = parseFloat(card.find('.item-price').val()) || 0;
+      let salePrice = parseFloat(card.find('.item-sale-price').val()) || 0;
       let qty = parseFloat(card.find('.item-qty').val()) || 0;
-      let subtotal = price * qty;
+      let subtotal = salePrice * qty;
 
       card.find('.subtotal-display').text(subtotal.toFixed(2));
       updateTotalInvoice();
     });
-    
-$(document).on('input', '.item-price, .item-sale-price, .item-category, .item-name', function () {
+
+    $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-name', function () {
       let card = $(this).closest('.invoice-card');
       card.find('.card-updatedFlag').text("updated");
-      updateTotalInvoice()
     });
 
     function getLocationSelectOptions(arrayOfLocations) {
@@ -547,20 +534,7 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
       checkData();
       getSalesSheetJson();
 
-      $('.myradio').click(function() {
-        if ($(this).attr('id') == "newCustomerToggel") {
-          $(".newCustomer").show();
-          $(".oldCustomer").hide();
-        } else {
-          $(".newCustomer").show();
-          $(".oldCustomer").show();
-        }
-        $('.myradio').removeClass('myactive');
-        $(this).addClass('myactive');
-      });
-
       const searchInput = document.getElementById('itemSearch');
-
       searchInput.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
           event.preventDefault();
@@ -613,14 +587,6 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
       $("#newLocation").val('').prop('disabled', false);
     }
 
-    function clearItemSelect() {
-      $('#itemSelect').prop('selectedIndex', 0);
-      $('#visiblePrice').val('');
-      $('#boxQ').prop('selectedIndex', 0);
-      $("#averageCost").val('');
-      $('#itemQuantity').val('');
-    }
-
     const a2e = s => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 
     function removeItem(btn) {
@@ -631,10 +597,11 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
     let invoiceObject = [];
     let invoiceText = ``;
 
-   function updateTotalInvoice() {
+    function updateTotalInvoice() {
       invoiceObject = [];
       invoiceText = ``;
-      let totalPrice = 0;
+      let totalCostSum = 0;
+      let totalSaleSum = 0;
       
       $('.invoice-card').each(function() {
         let card = $(this);
@@ -642,31 +609,35 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
         
         let currentQty = parseFloat(qtyInput.val()) || 0;
         let originalQty = parseFloat(qtyInput.attr('data-original')) || 0;
-        
-        // Calculate difference (e.g., 20 - 21 = -1)
-        let diff = currentQty - originalQty;
+        let diff = currentQty - originalQty; // Net quantity difference
+
+        let costPrice = parseFloat(card.find('.item-price').val()) || 0;
+        let salePrice = parseFloat(card.find('.item-sale-price').val()) || 0;
+        let retailSubtotal = parseFloat(card.find('.subtotal-display').text()) || (salePrice * currentQty);
 
         let rowItem = {
           barcode: card.find('.card-barcode').text().replace(/&nbsp;/g, ' '),
           type: card.find('.item-name').val().replace(/&nbsp;/g, ' '),
-          priceBox: card.find('.item-sale-price').val(),
-          quantity: diff, // Sends the net difference (-1)
-          totalPrice: card.find('.subtotal-display').text(),
-          averageCost: card.find('.item-price').val(),
+          priceBox: salePrice,
+          quantity: diff,
+          totalPrice: retailSubtotal.toFixed(2),
+          averageCost: costPrice,
           newitem: card.find('.card-newitem').text(),
           updated: card.find('.card-updatedFlag').text(),
           category: card.find('.item-category').val(),
         };
 
         invoiceObject.push(rowItem);
-        totalPrice += parseFloat(rowItem.totalPrice) || 0;
-        invoiceText += rowItem.type + " التغيير في الكمية : " + rowItem.quantity + " المجموع : " + rowItem.totalPrice + "$\n";
+        totalCostSum += (costPrice * currentQty);
+        totalSaleSum += retailSubtotal;
+
+        invoiceText += rowItem.type + " التغيير في الكمية : " + rowItem.quantity + " إجمالي المبيع : " + rowItem.totalPrice + "$\n";
       });
 
-      $("#totalSumInvoiceSpan").html(totalPrice.toFixed(2));
-      $("#totalSumInvoice").val(totalPrice.toFixed(2));
-      $("#totalSumInvoiceLiraSpan").html((totalPrice * 90000).toLocaleString());
-      $("#totalSumInvoiceServer").val(totalPrice.toFixed(2));
+      $("#totalCostSumSpan").html(totalCostSum.toFixed(2));
+      $("#totalSaleSumSpan").html(totalSaleSum.toFixed(2));
+      $("#totalSumInvoiceLiraSpan").html((totalSaleSum * 90000).toLocaleString());
+      $("#totalSumInvoiceServer").val(totalSaleSum.toFixed(2));
     }
 
     function playBeep() {
@@ -674,27 +645,20 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-        
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
         gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        
         oscillator.start();
         oscillator.stop(audioCtx.currentTime + 0.15);
-      } catch (e) {
-        console.log("Audio feedback not supported", e);
-      }
+      } catch (e) {}
     }
 
-    /* Camera Scanner Script with Vibration & Beep */
     let html5QrCode = null;
 
     function startScanner() {
       document.getElementById('scannerModal').style.display = 'flex';
-      
       html5QrCode = new Html5Qrcode("reader");
       const config = { 
         fps: 15, 
@@ -711,9 +675,7 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
         { facingMode: "environment" },
         config,
         (decodedText) => {
-          if ("vibrate" in navigator) {
-            navigator.vibrate(200);
-          }
+          if ("vibrate" in navigator) navigator.vibrate(200);
           playBeep();
           document.getElementById('itemSearch').value = decodedText;
           stopScanner();
@@ -721,7 +683,7 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
         },
         () => {}
       ).catch((err) => {
-        alert(`Unable to start camera: ${err}`);
+        alert(`تعذر تشغيل الكاميرا: ${err}`);
         stopScanner();
       });
     }
@@ -739,17 +701,6 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
       }
     }
 
-    function renderDataList(stockList) {
-      const dataList = document.getElementById('stockOptions');
-      dataList.innerHTML = ''; 
-      stockList.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.type.replace(/&nbsp;/g, ' '); 
-        option.innerText = ` $${item.averageCost} (${item.category})`;
-        dataList.appendChild(option);
-      });
-    }
-
     function openWhatsApp() {
       const phoneNumber = $("#customerPhone").val();
       const message = "Hello!";
@@ -765,7 +716,7 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
     function onSuccess() {
       let number = a2e($("#customerPhone").val());
       let wNumber = "+961" + Number(number);
-      let text = `فاتورة رسمية :\n---------------------------\n${invoiceText}\n---------------------------\nالمجموع : ${$("#totalSumInvoiceSpan").html()} $\n---------------------------`;
+      let text = `تقرير جرد المخزون والتسعير :\n---------------------------\n${invoiceText}\n---------------------------\nإجمالي سعر المبيع : ${$("#totalSaleSumSpan").html()} $\nإجمالي التكلفة : ${$("#totalCostSumSpan").html()} $\n---------------------------`;
 
       swal({
         title: 'نجح',
@@ -796,8 +747,6 @@ $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-na
         name: form.customerName.value,
         phone: a2e(form.customerPhone.value),
         location: form.newLocation.value,
-        bankDollar: a2e(form.totalSumInvoice.value),
-        bankLira: a2e(form.totalSumInvoiceLira.value),
         totalHiddenBankAccount: form.totalSumInvoiceServer.value,
         vanNumber: typeof user !== 'undefined' ? user : 'van1',
         oldCustomer: oldCustomerBool,
