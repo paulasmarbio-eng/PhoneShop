@@ -4,7 +4,7 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>سجل العنصر وإدارة المخزون</title>
+  <title>سجل العنصر وتفاصيل المخزون</title>
   
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" defer></script>
@@ -157,16 +157,17 @@
       background: #f9f9f9;
       padding: 10px;
       border-radius: 6px;
-      border-right: 4px solid #007bff;
       margin-bottom: 8px;
       font-size: 13px;
     }
 
-    .history-log-item span {
-      display: block;
-      color: #666;
-      font-size: 12px;
-      margin-top: 3px;
+    .history-totals-box {
+      background: #e8f5e9;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      text-align: center;
+      font-size: 13px;
     }
 
     .save-btn-mobile {
@@ -197,7 +198,7 @@
   <div id="fakeBox"><div id="navbar"></div></div>
 
   <div class="container-mobile">
-    <h2 class="header" id="h1Val" style="text-align: center; font-weight: bold; margin-top: 15px;">سجل العنصر والمخزون</h2>
+    <h2 class="header" id="h1Val" style="text-align: center; font-weight: bold; margin-top: 15px;">سجل العنصر وتفاصيل المخزون</h2>
 
     <form id="inForm" onsubmit="event.preventDefault(); saveItemUpdate(this);">
       <input type="hidden" name="method" value="updateItemType"/>
@@ -233,10 +234,11 @@
           </div>
 
           <input type="hidden" id="editItemId" name="itemId" />
+          <div style="display:none;"><span class="card-updatedFlag">no</span></div>
 
           <div class="invoice-row">
             <label>الفئة (Category)</label>
-            <select id="editCategory" name="category" class="form-control">
+            <select id="editCategory" name="category" class="item-category">
               <!-- Populated dynamically -->
             </select>
           </div>
@@ -248,17 +250,25 @@
 
           <div class="invoice-row">
             <label>سعر التكلفة</label>
-            <input type="number" step="0.01" id="editCost" name="cost" />
+            <input type="number" step="0.01" id="editCost" name="cost" class="item-price" />
           </div>
 
           <div class="invoice-row">
             <label>سعر المبيع</label>
-            <input type="number" step="0.01" id="editSalePrice" name="salePrice" />
+            <input type="number" step="0.01" id="editSalePrice" name="salePrice" class="item-sale-price" />
           </div>
 
           <div class="invoice-row">
             <label>الكمية الحالية بالمخزون</label>
-            <input type="number" id="editStockCount" name="stockCount" />
+            <input type="number" id="editStockCount" name="stockCount" class="item-qty" />
+          </div>
+
+          <!-- Total Valuations Display -->
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #eee; text-align: center; background: #f8f9fa; border-radius: 6px; padding: 8px;">
+            <div style="display: flex; justify-content: space-around; font-size: 13px;">
+              <span>إجمالي التكلفة: <strong id="cardTotalCost" style="color: #333;">0.00 $</strong></span>
+              <span>إجمالي المبيع: <strong id="cardTotalSale" style="color: #28a745;">0.00 $</strong></span>
+            </div>
           </div>
         </div>
 
@@ -267,6 +277,18 @@
           <div class="invoice-card-header">
             <span>سجل المشتريات والمبيعات السابقة</span>
           </div>
+          
+          <!-- History Totals Summary Box -->
+          <div class="history-totals-box" id="historyTotalsBox" style="display:none;">
+            <div style="display: flex; justify-content: space-around; font-weight: bold; color: #444; font-size: 12px; margin-bottom: 4px;">
+              <span>مشتريات (تكلفة): <span id="historyBuyTotal" style="color: #28a745;">0.00 $</span></span>
+              <span>مبيعات (مبيع): <span id="historySaleTotal" style="color: #dc3545;">0.00 $</span></span>
+            </div>
+            <div style="font-weight: bold; color: #007bff; font-size: 13px; border-top: 1px dashed #ccc; padding-top: 4px;">
+              صافي الربح الإجمالي: <span id="historyProfitTotal">0.00 $</span>
+            </div>
+          </div>
+
           <div id="historyLogContainer">
             <p style="text-align: center; color: #777; font-size: 13px;">لا توجد سجلات سابقة متوفرة لهذا العنصر.</p>
           </div>
@@ -334,14 +356,23 @@
       );
 
       if (matchedItem) {
-        loadItemIntoCard(matchedItem);
+        loadItemDetails(matchedItem);
       } else {
         swal("تنبيه", "لم يتم العثور على هذا العنصر في قاعدة البيانات", "warning");
       }
       searchInput.value = '';
     }
 
-    function loadItemIntoCard(item) {
+    function calculateCardTotals() {
+      let cost = parseFloat($('#editCost').val()) || 0;
+      let sale = parseFloat($('#editSalePrice').val()) || 0;
+      let qty = parseFloat($('#editStockCount').val()) || 0;
+
+      $('#cardTotalCost').text((cost * qty).toFixed(2) + ' $');
+      $('#cardTotalSale').text((sale * qty).toFixed(2) + ' $');
+    }
+
+    function loadItemDetails(item) {
       $('#itemDetailsCard').fadeIn();
       
       $('#editItemId').val(item.id || '');
@@ -351,24 +382,102 @@
       $('#editCost').val(item.cost || 0);
       $('#editSalePrice').val(item.averageCost || 0);
       $('#editStockCount').val(item.count || item.stockCount || 0);
+      $('.card-updatedFlag').text("no");
 
-      // Render simulated or fetched transaction history logs if available in item object
-      let logHtml = '';
-      if (item.history && item.history.length > 0) {
-        item.history.forEach(h => {
-          logHtml += `<div class="history-log-item">
-            <strong>${h.type || 'حركة'}</strong> - الكمية: ${h.quantity} | السعر: $${h.price}
-            <span>التاريخ: ${h.date || 'غير محدد'} | الجهة: ${h.party || 'محلي'}</span>
-          </div>`;
+      calculateCardTotals();
+
+      // Fetch history log using your exact URL format
+      let historyUrl = 'https://script.google.com/macros/s/AKfycbxnVyT_evlaYhAcPZMElI_cAXAtedMp0fVa0IRPp5nScE7sdpmEwJDj2XzsXSV5ew2Xjw/exec?uniqueval=getHistory&barcodename=' + encodeURIComponent(item.barcode || item.type) + '&id=' + encodeURIComponent(id);
+      
+      $('#historyLogContainer').html('<p style="text-align: center; color: #555;">جاري تحميل السجل...</p>');
+      $('#historyTotalsBox').hide();
+
+      fetch(historyUrl)
+        .then(res => res.json())
+        .then(historyData => {
+          renderClientCalculatedHistory(historyData);
+        })
+        .catch(err => {
+          console.log("Error fetching history:", err);
+          $('#historyLogContainer').html('<p style="text-align: center; color: #d9534f;">تعذر تحميل السجل.</p>');
         });
-      } else {
-        logHtml = `<div class="history-log-item" style="border-right-color: #28a745;">
-          <strong>معلومات المخزون الحالي</strong>
-          <span>التكلفة الحالية: $${item.cost || 0} | سعر المبيع: $${item.averageCost || 0}</span>
-        </div>`;
-      }
-      $('#historyLogContainer').html(logHtml);
     }
+
+    // Client-side calculations and sorting for history logs
+    function renderClientCalculatedHistory(historyArray) {
+      let container = $('#historyLogContainer');
+      container.empty();
+
+      if (!historyArray || historyArray.length === 0) {
+        container.html('<p style="text-align: center; color: #777; font-size: 13px;">لا توجد سجلات سابقة متوفرة لهذا العنصر.</p>');
+        $('#historyTotalsBox').hide();
+        return;
+      }
+
+      // Sort client-side: most recent date first
+      historyArray.sort(function(a, b) {
+        let dateA = new Date(a.date || a.timestamp || 0);
+        let dateB = new Date(b.date || b.timestamp || 0);
+        return dateB - dateA;
+      });
+
+      let totalBuyAmount = 0;
+      let totalSaleAmount = 0;
+      let totalProfitAmount = 0;
+      let html = '';
+
+      historyArray.forEach(log => {
+        let isBuy = (log.action && log.action.includes('Buy'));
+        let badgeColor = isBuy ? '#28a745' : '#dc3545';
+        let qtyVal = Math.abs(parseFloat(log.quantity) || 0);
+        let qtySign = isBuy ? `+${qtyVal}` : `-${qtyVal}`;
+
+        let costPrice = parseFloat(log.price || 0);     // Cost price from row[7]
+        let salePrice = parseFloat(log.salePrice || 0); // Sale price from row[8]
+
+        let lineTotalCost = qtyVal * costPrice;
+        let lineTotalSale = qtyVal * salePrice;
+        let lineProfit = isBuy ? 0 : (lineTotalSale - lineTotalCost);
+
+        if (isBuy) {
+          totalBuyAmount += lineTotalCost;
+        } else {
+          totalSaleAmount += lineTotalSale;
+          totalProfitAmount += lineProfit;
+        }
+
+        let profitBadgeStyle = lineProfit >= 0 ? 'color: #28a745;' : 'color: #dc3545;';
+
+        html += `
+          <div class="history-log-item" style="border-right: 4px solid ${badgeColor}; padding: 10px; margin-bottom: 8px; background: #f9f9f9; border-radius: 6px;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+              <span>${log.action === 'Buy' ? 'شراء' : 'بيع'} - ${log.party}</span>
+              <span style="color: ${badgeColor};">${qtySign} قطعة</span>
+            </div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px; display: flex; justify-content: space-between;">
+              <span>التاريخ: ${log.date || 'غير محدد'}</span>
+              <span>إجمالي التكلفة: $${lineTotalCost.toFixed(2)}</span>
+            </div>
+            <div style="font-size: 12px; color: #666; margin-top: 2px; display: flex; justify-content: space-between;">
+              <span>إجمالي المبيع: $${lineTotalSale.toFixed(2)}</span>
+              ${!isBuy ? `<span style="font-weight: bold; ${profitBadgeStyle}">الربح: $${lineProfit.toFixed(2)}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      // Update summary counters at the top of the history box
+      $('#historyBuyTotal').text(totalBuyAmount.toFixed(2) + ' $');
+      $('#historySaleTotal').text(totalSaleAmount.toFixed(2) + ' $');
+      $('#historyProfitTotal').text(totalProfitAmount.toFixed(2) + ' $');
+      $('#historyTotalsBox').show();
+      container.html(html);
+    }
+
+    $(document).on('input', '.invoice-card input, .invoice-card select', function() {
+      $('.card-updatedFlag').text("updated");
+      calculateCardTotals();
+    });
 
     $(document).ready(function() {
       checkData();
@@ -449,6 +558,7 @@
         cost: $('#editCost').val(),
         averageCost: $('#editSalePrice').val(),
         count: $('#editStockCount').val(),
+        updated: $('.card-updatedFlag').text(),
         jsTs: Date.now().toString()
       };
 

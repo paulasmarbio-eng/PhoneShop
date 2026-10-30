@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>التحقق من المخزون حسب الفئة - V4</title>
+  
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+
+  <script src="app.js?t=3" defer></script>
+  <link rel="manifest" href="https://raw.githubusercontent.com/paulasmarbio-eng/PhoneShop/refs/heads/main/manifest.json">
+  <link rel="stylesheet" href="style.css?t=44" />
+
+  <style>
+    body {
+      background: #e5ffe5 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding-bottom: 40px;
+    }
+    
+    input[type="number"] {
+      direction: ltr;
+      text-align: right; 
+    }
+
+    .container-mobile {
+      padding: 10px 15px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Category Selection Header Wrapper */
+    .category-select-wrapper {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      border: 1px solid #c3e6cb;
+      margin-bottom: 15px;
+    }
+
+    .category-select-wrapper label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 15px;
+    }
+
+    #categoryFilterSelect {
+      width: 100%;
+      height: 48px;
+      font-size: 16px;
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #fafafa;
+      box-sizing: border-box;
+    }
+
+    /* Clean Card Container for Invoice/Stock Items */
+    #invoiceContainer {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .invoice-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      border: 1px solid #c3e6cb;
+      position: relative;
+      margin-bottom: 15px;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    /* Checked / Verified Card State */
+    .invoice-card.checked-card {
+      background: #d4edda !important;
+      border: 2px solid #28a745 !important;
+    }
+
+    .invoice-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .invoice-card-header .barcode-lbl {
+      font-size: 13px;
+      color: #666;
+      font-weight: bold;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .remove-card-btn {
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .check-card-btn {
+      background: #e0e0e0;
+      color: #333;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .invoice-card.checked-card .check-card-btn {
+      background: #28a745;
+      color: white;
+    }
+
+    .invoice-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .invoice-row label {
+      font-size: 14px;
+      font-weight: bold;
+      color: #444;
+      margin-bottom: 0;
+    }
+
+    .invoice-row input, .invoice-row select {
+      height: 38px;
+      font-size: 15px;
+      padding: 4px 8px;
+      text-align: center;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      width: 60%;
+      box-sizing: border-box;
+    }
+
+    .invoice-row input.item-name {
+      text-align: right;
+    }
+
+    .subtotal-display {
+      font-weight: bold;
+      color: #007bff;
+      font-size: 15px;
+    }
+
+    /* History Log List Styles */
+    .history-log-item {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .history-totals-box {
+      background: #e8f5e9;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    /* Form Fields Mobile Layout */
+    .form-group-mobile {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .form-group-mobile label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .form-group-mobile select, .form-group-mobile input {
+      width: 100%;
+      height: 42px;
+      font-size: 15px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    .action-icon-btn {
+      height: 42px;
+      width: 48px;
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #f8f9fa;
+      margin-right: 5px;
+    }
+
+    .action-icon-btn img {
+      width: 24px;
+      height: 24px;
+    }
+
+    .save-btn-mobile {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: 50px;
+      font-size: 18px;
+      font-weight: bold;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      display: block;
+      box-sizing: border-box !important;
+      margin: 0 auto;
+      cursor: pointer;
+    }
+
+    .save-btn-mobile:active {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body dir="rtl" class="body">
+
+  <div class="loading">
+    <div class="loader"></div>
+  </div>
+  <div id="fakeBox"><div id="navbar"></div></div>
+
+  <div class="container-mobile">
+    <h2 class="header" id="h1Val" style="text-align: center; font-weight: bold; margin-top: 15px;">التحقق من المخزون حسب الفئة</h2>
+
+    <form id="inForm" onsubmit="event.preventDefault(); geoFindMe(this);">
+      <input type="hidden" name="method" value="add"/>
+
+      <!-- Category Selection Wrapper -->
+      <div class="category-select-wrapper">
+        <label for="categoryFilterSelect">اختر الفئة لعرض البضاعة:</label>
+        <select id="categoryFilterSelect" onchange="loadItemsByCategory(this.value)">
+          <option value="" disabled selected>-- اضغط لاختيار الفئة --</option>
+        </select>
+      </div>
+
+      <h3 style="font-weight: bold; margin-top: 10px;">عناصر المخزون</h3>
+
+      <!-- Clean Card Invoice Container -->
+      <div id="invoiceContainer">
+        <p style="text-align: center; color: #666; padding: 20px;">الرجاء اختيار فئة من القائمة أعلاه لعرض عناصرها.</p>
+      </div>
+
+      <!-- Invoice Totals Block (Shows both Total Cost and Total Sale Price) -->
+      <div class="form-group-mobile" style="text-align: center; background: #e8f5e9;">
+        <h5 style="margin: 4px 0; color: #333;">إجمالي التكلفة: <span id="totalCostSumSpan">0</span> $</h5>
+        <h4 style="margin: 6px 0; color: #28a745; font-weight: bold;">إجمالي سعر المبيع: <span id="totalSaleSumSpan">0</span> $</h4>
+        <h5 style="color: #555;">أو بالليرة (المبيع): <span id="totalSumInvoiceLiraSpan">0</span> L.L.</h5>
+        <input type="hidden" id="totalSumInvoiceServer" name="totalSumInvoiceServer"/>
+        <input type="hidden" id="vanNumber" name="vanNumber" value="van1" />
+      </div>
+
+      <!-- Category History Section (Hidden until category is selected) -->
+      <div id="categoryHistoryCard" class="invoice-card" style="display:none;">
+        <div class="invoice-card-header">
+          <span>سجل الحركات التاريخية للفئة (مشتريات ومبيعات)</span>
+        </div>
+        
+        <div class="history-totals-box" id="catHistoryTotalsBox" style="display:none;">
+          <div style="display: flex; justify-content: space-around; font-weight: bold; color: #444; font-size: 12px; margin-bottom: 4px;">
+            <span>مشتريات (تكلفة): <span id="catBuyTotal" style="color: #28a745;">0.00 $</span></span>
+            <span>مبيعات (مبيع): <span id="catSaleTotal" style="color: #dc3545;">0.00 $</span></span>
+          </div>
+          <div style="font-weight: bold; color: #007bff; font-size: 13px; border-top: 1px dashed #ccc; padding-top: 4px;">
+            صافي الربح الإجمالي: <span id="catProfitTotal">0.00 $</span>
+          </div>
+        </div>
+        <div class="form-group-mobile" style="background: transparent; box-shadow: none; padding: 0;">
+          <button type="submit" class="save-btn-mobile">حفظ التعديلات</button>
+        </div>
+
+        <div id="catHistoryLogContainer">
+          <p style="text-align: center; color: #777; font-size: 13px;">جاري تحميل السجل...</p>
+        </div>
+      </div>
+
+      <!-- Location & Customer Selection -->
+      <div class="form-group-mobile">
+        <label>المنطقة</label>
+        <select id="location" onchange="changeLocHandler($(this))">
+          <option value="غير محدد ">غير محدد</option> 
+        </select>
+      </div>
+
+      <div class="form-group-mobile">
+        <label>العميل</label>
+        <select id="customerSelect" onchange="selectCustomerHandler($(this))"></select>
+      </div>
+
+      <div class="form-group-mobile">
+        <label>Cash Box</label>
+        <select id="cashbox">
+          <option value="CashDrawer" selected>CashDrawer</option> 
+          <option value="Wish">Wish</option> 
+        </select>  
+      </div>
+
+      <!-- New Customer Fields -->
+      <div class="form-group-mobile newCustomer">
+        <h5 style="font-weight: bold;">معلومات العميل الجديد</h5>
+        
+        <div style="margin-bottom: 8px;">
+          <label>المنطقة</label>
+          <input type="text" name="newLocation" id="newLocation"/>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <label>اسم العميل</label>
+          <input type="text" name="customerName" id="customerName"/>
+        </div>
+
+        <div>
+          <label>رقم التليفون</label>
+          <div style="display: flex; gap: 5px;">
+            <input type="tel" name="customerPhone" id="customerPhone" style="flex: 1;"/>
+            <button type="button" class="action-icon-btn" onclick="openWhatsApp()">
+              <img src="wtsp.png" alt="WhatsApp">
+            </button>
+            <button type="button" class="action-icon-btn" onclick="openMaps()">
+              <img src="googlemaps.png" alt="Google Maps">
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" name="alt" />
+      <input type="hidden" name="long"/>
+    </form>
+  </div>
+
+  <!-- Main Logic & Utilities -->
+  <script>
+    let items = [];
+    let cats = [];
+
+    function getSalesSheetJson() {
+      let url = 'https://script.google.com/macros/s/AKfycbxnVyT_evlaYhAcPZMElI_cAXAtedMp0fVa0IRPp5nScE7sdpmEwJDj2XzsXSV5ew2Xjw/exec?id=' + encodeURIComponent(id);
+      fetch(url)
+        .then(res => res.json())
+        .then(out => processSalesSheetData(out))
+        .catch(err => console.log(err));
+    }
+
+    function processSalesSheetData(jsData) {
+      checkData();
+      processLocationData(jsData.locations);
+      processCustomersData(jsData.customers);
+      items = jsData.types || [];   
+      cats = jsData.cat || [];
+      populateCategoryDropdown(cats);
+
+      $(".loading").hide();
+    }  
+
+    function populateCategoryDropdown(categories) {
+      let html = `<option value="" disabled selected>-- اضغط لاختيار الفئة --</option>`;
+      for (let i = 0; i < categories.length; i++) {
+        if(categories[i] && categories[i].id) {
+          html += `<option value="${categories[i].id}">${categories[i].id}</option>`;
+        }
+      }
+      document.getElementById("categoryFilterSelect").innerHTML = html;
+    }
+
+    function processLocationData(jsData) {
+      getLocationSelectOptions(jsData);
+    }
+
+    function processCustomersData(jsData) {
+      getCustomerSelectOptions(jsData);
+    }
+
+    function getCustomerSelectOptions(arrayOfLocations) {
+      let html = `<option style="display:none" disabled selected value=""></option>`;
+      for (let i = 0; i < arrayOfLocations.length; i++) {
+        html += `<option fpw="${arrayOfLocations[i].fpw}" fpr="${arrayOfLocations[i].fpr}" fpb="${arrayOfLocations[i].fpb}" phone="${arrayOfLocations[i].phone}" location="${arrayOfLocations[i].location}" value="${arrayOfLocations[i].name}">${arrayOfLocations[i].name}</option>`;
+      }
+      document.getElementById("customerSelect").innerHTML = html;
+    }
+
+    function loadItemsByCategory(selectedCategory) {
+      $('#invoiceContainer').empty();
+
+      let filteredItems = items.filter(item => item.category === selectedCategory);
+
+      if (filteredItems.length === 0) {
+        $('#invoiceContainer').html('<p style="text-align: center; color: #666; padding: 20px;">لا توجد عناصر مطابقة لهذه الفئة.</p>');
+        updateTotalInvoice();
+      } else {
+        filteredItems.forEach(item => {
+          let stockVal = item.count !== undefined ? item.count : (item.stockCount || 0);
+          let costVal = item.cost || 0;
+          let saleVal = item.averageCost || 0;
+          let initialSaleSubtotal = (parseFloat(saleVal) * parseFloat(stockVal)).toFixed(2);
+          
+          let cardTemplate = `
+            <div class="invoice-card itemInTable" style="margin-bottom: 12px;">
+              <div class="invoice-card-header">
+                <span class="barcode-lbl">الكود: ${item.barcode || 'N/A'}</span>
+                <div class="header-actions">
+                  <button type="button" class="check-card-btn" onclick="toggleCheckCard($(this))">✓ تدقيق</button>
+                  <button type="button" class="remove-card-btn" onclick="removeItem($(this))">حذف</button>
+                </div>
+              </div>
+              
+              <!-- 1. Category -->
+              <div class="invoice-row">
+                <label>الفئة (Category)</label>
+                <select class="item-category invoiceElement"> 
+                  ${cats.map(cat => `
+                    <option value="${cat.id}" ${cat.id === item.category ? 'selected' : ''}>
+                      ${cat.id || 'Select Category'}
+                    </option>
+                  `).join('')}  
+                </select>
+              </div>
+
+              <!-- 2. Item Name -->
+              <div class="invoice-row">
+                <label>اسم الغرض</label>
+                <input type="text" value="${item.type ? item.type.replace(/&nbsp;/g, ' ') : ''}" class="item-name" />
+              </div>
+
+              <!-- 3. Cost Price -->
+              <div class="invoice-row">
+                <label>سعر التكلفة</label>
+                <input type="number" step="0.01" value="${costVal}" class="item-price invoiceElement" />
+              </div>
+
+              <!-- 4. Sell Price -->
+              <div class="invoice-row">
+                <label>سعر المبيع</label>
+                <input type="number" step="0.01" value="${saleVal}" class="item-sale-price invoiceElement" />
+              </div>
+
+              <!-- 5. Quantity -->
+              <div class="invoice-row">
+                <label>الكمية الحالية</label>
+                <input type="number" class="item-qty invoiceElement" value="${stockVal}" data-original="${stockVal}" />
+              </div>
+
+              <!-- 6. Retail Subtotal Display -->
+              <div class="invoice-row">
+                <label>إجمالي المبيع</label>
+                <span class="subtotal-display invoiceElement">${initialSaleSubtotal}</span>
+              </div>
+
+              <!-- Hidden fields required for backend data parsing -->
+              <div style="display:none;">
+                <span class="card-barcode">${item.barcode || ''}</span>
+                <span class="card-newitem">${item.newitem || ''}</span>
+                <span class="card-updatedFlag">no</span>
+              </div>
+            </div>`;
+
+          $('#invoiceContainer').append(cardTemplate);
+        });
+
+        updateTotalInvoice();
+      }
+
+      // Fetch and display history log for this category
+      $('#categoryHistoryCard').fadeIn();
+      let historyUrl = 'https://script.google.com/macros/s/AKfycbxnVyT_evlaYhAcPZMElI_cAXAtedMp0fVa0IRPp5nScE7sdpmEwJDj2XzsXSV5ew2Xjw/exec?uniqueval=getCategoryHistory&category=' + encodeURIComponent(selectedCategory) + '&id=' + encodeURIComponent(id);
+      
+      $('#catHistoryLogContainer').html('<p style="text-align: center; color: #555;">جاري تحميل سجل الفئة...</p>');
+      $('#catHistoryTotalsBox').hide();
+
+      fetch(historyUrl)
+        .then(res => res.json())
+        .then(historyData => {
+          renderCategoryHistory(historyData);
+        })
+        .catch(err => {
+          console.log("Error fetching category history:", err);
+          $('#catHistoryLogContainer').html('<p style="text-align: center; color: #d9534f;">تعذر تحميل السجل.</p>');
+        });
+    }
+
+    function toggleCheckCard(btn) {
+      let card = btn.closest('.invoice-card');
+      card.toggleClass('checked-card');
+      if (card.hasClass('checked-card')) {
+        btn.text('✓ تم');
+      } else {
+        btn.text('✓ تدقيق');
+      }
+    }
+
+    function renderCategoryHistory(historyArray) {
+      let container = $('#catHistoryLogContainer');
+      container.empty();
+
+      if (!historyArray || historyArray.length === 0) {
+        container.html('<p style="text-align: center; color: #777; font-size: 13px;">لا توجد حركات تاريخية لهذه الفئة.</p>');
+        $('#catHistoryTotalsBox').hide();
+        return;
+      }
+
+      // Sort client-side: most recent first
+      historyArray.sort(function(a, b) {
+        let dateA = new Date(a.date || a.timestamp || 0);
+        let dateB = new Date(b.date || b.timestamp || 0);
+        return dateB - dateA;
+      });
+
+      let totalBuy = 0;
+      let totalSale = 0;
+      let totalProfit = 0;
+      let html = '';
+
+      historyArray.forEach(log => {
+        let isBuy = (log.action && log.action.includes('Buy'));
+        let badgeColor = isBuy ? '#28a745' : '#dc3545';
+        let qtyVal = Math.abs(parseFloat(log.quantity) || 0);
+        let qtySign = isBuy ? `+${qtyVal}` : `-${qtyVal}`;
+
+        let costPrice = parseFloat(log.price || 0);
+        let salePrice = parseFloat(log.salePrice || 0);
+        
+        let tCost = qtyVal * costPrice;
+        let tSale = qtyVal * salePrice;
+        let profit = isBuy ? 0 : (tSale - tCost);
+
+        if (isBuy) {
+          totalBuy += tCost;
+        } else {
+          totalSale += tSale;
+          totalProfit += profit;
+        }
+
+        let profitStyle = profit >= 0 ? 'color: #28a745;' : 'color: #dc3545;';
+
+        html += `
+          <div class="history-log-item" style="border-right: 4px solid ${badgeColor}; padding: 10px; margin-bottom: 8px; background: #f9f9f9; border-radius: 6px;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+              <span>${log.itemName || 'عنصر'} (${isBuy ? 'شراء' : 'بيع'})</span>
+              <span style="color: ${badgeColor};">${qtySign} قطعة</span>
+            </div>
+            <div style="font-size: 12px; color: #444; margin-top: 4px;">
+              الطرف: ${log.party || 'محل'} | التاريخ: ${log.date || 'غير محدد'}
+            </div>
+            <div style="font-size: 12px; color: #666; margin-top: 2px; display: flex; justify-content: space-between;">
+              <span>التكلفة: $${tCost.toFixed(2)} | المبيع: $${tSale.toFixed(2)}</span>
+              ${!isBuy ? `<span style="font-weight: bold; ${profitStyle}">الربح: $${profit.toFixed(2)}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      $('#catBuyTotal').text(totalBuy.toFixed(2) + ' $');
+      $('#catSaleTotal').text(totalSale.toFixed(2) + ' $');
+      $('#catProfitTotal').text(totalProfit.toFixed(2) + ' $');
+      $('#catHistoryTotalsBox').show();
+      container.html(html);
+    }
+
+    $(document).on('input', '.invoiceElement', function () {
+      let card = $(this).closest('.invoice-card');
+      let salePrice = parseFloat(card.find('.item-sale-price').val()) || 0;
+      let qty = parseFloat(card.find('.item-qty').val()) || 0;
+      let subtotal = salePrice * qty;
+
+      card.find('.subtotal-display').text(subtotal.toFixed(2));
+      updateTotalInvoice();
+    });
+
+    $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-name', function () {
+      let card = $(this).closest('.invoice-card');
+      card.find('.card-updatedFlag').text("updated");
+    });
+
+    function getLocationSelectOptions(arrayOfLocations) {
+      let html = `<option value="غير محدد ">غير محدد</option>`;
+      for (let i = 0; i < arrayOfLocations.length; i++) {
+        html += `<option value="${arrayOfLocations[i].name}">${arrayOfLocations[i].name}</option>`;
+      }
+      document.getElementById("location").innerHTML = html;
+    }
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          console.log("Latitude: " + position.coords.latitude);
+          console.log("Longitude: " + position.coords.longitude);
+        },
+        error => {
+          console.error("Geolocation permission denied: " + error.message);
+        }
+      );
+    }
+
+    $(document).ready(function() {
+      checkData();
+      getSalesSheetJson();
+
+      $('.myradio').click(function() {
+        if ($(this).attr('id') == "newCustomerToggel") {
+          $(".newCustomer").show();
+          $(".oldCustomer").hide();
+        } else {
+          $(".newCustomer").show();
+          $(".oldCustomer").show();
+        }
+        $('.myradio').removeClass('myactive');
+        $(this).addClass('myactive');
+      });
+    });
+
+    function changeLocHandler(a) {
+      $("#customerSelect").val([]);
+      let valtoHide = a.find(":selected").attr('value');
+      $("#customerSelect option").hide();
+      $("#customerSelect option[location='" + valtoHide + "']").show();
+
+      if ($('#location').prop('selectedIndex') == 0) {
+        $("#customerSelect option").show();
+        $("#newLocation").prop('disabled', false).val('');
+      } else {
+        $("#newLocation").prop('disabled', true).val(valtoHide);
+      }
+    }
+
+    let oldCustomerBool = false;
+    let fixedProfitw = 6, fixedProfitr = 6, fixedProfitb = 6;
+
+    function selectCustomerHandler(a) {
+      $("#newLocation").prop('disabled', true).val(a.find(":selected").attr('location'));
+      oldCustomerBool = true;
+      $("#customerName").val(a.find(":selected").attr('value')).prop('disabled', true);
+      $("#customerPhone").val(a.find(":selected").attr('phone')).prop('disabled', true);
+
+      if (oldCustomerBool) {
+        fixedProfitw = a.find(":selected").attr('fpw') * 1;
+        fixedProfitr = a.find(":selected").attr('fpr') * 1;
+        fixedProfitb = a.find(":selected").attr('fpb') * 1;
+      }
+    }
+
+    function clearCustomerSelect() {
+      oldCustomerBool = false;
+      $('#customerSelect').prop('selectedIndex', -1);
+      $("#customerName").val('').prop('disabled', false);
+      $("#customerPhone").val('').prop('disabled', false);
+      $("#newLocation").val('').prop('disabled', false);
+    }
+
+    const a2e = s => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+
+    function removeItem(btn) {
+      btn.closest('.invoice-card').remove(); 
+      updateTotalInvoice();      
+    }
+
+    let invoiceObject = [];
+    let invoiceText = ``;
+
+    function updateTotalInvoice() {
+      invoiceObject = [];
+      invoiceText = ``;
+      let totalCostSum = 0;
+      let totalSaleSum = 0;
+      
+      $('.invoice-card.itemInTable').each(function() {
+        let card = $(this);
+        let qtyInput = card.find('.item-qty');
+        
+        let currentQty = parseFloat(qtyInput.val()) || 0;
+        let originalQty = parseFloat(qtyInput.attr('data-original')) || 0;
+        let diff = currentQty - originalQty; // Net quantity difference
+
+        let costPrice = parseFloat(card.find('.item-price').val()) || 0;
+        let salePrice = parseFloat(card.find('.item-sale-price').val()) || 0;
+        let retailSubtotal = parseFloat(card.find('.subtotal-display').text()) || (salePrice * currentQty);
+
+        let rowItem = {
+          barcode: card.find('.card-barcode').text().replace(/&nbsp;/g, ' '),
+          type: card.find('.item-name').val().replace(/&nbsp;/g, ' '),
+          priceBox: salePrice,
+          quantity: diff,
+          totalPrice: retailSubtotal.toFixed(2),
+          averageCost: costPrice,
+          newitem: card.find('.card-newitem').text(),
+          updated: card.find('.card-updatedFlag').text(),
+          category: card.find('.item-category').val(),
+        };
+
+        invoiceObject.push(rowItem);
+        totalCostSum += (costPrice * currentQty);
+        totalSaleSum += retailSubtotal;
+
+        invoiceText += rowItem.type + " التغيير في الكمية : " + rowItem.quantity + " إجمالي المبيع : " + rowItem.totalPrice + "$\n";
+      });
+
+      $("#totalCostSumSpan").html(totalCostSum.toFixed(2));
+      $("#totalSaleSumSpan").html(totalSaleSum.toFixed(2));
+      $("#totalSumInvoiceLiraSpan").html((totalSaleSum * 90000).toLocaleString());
+      $("#totalSumInvoiceServer").val(totalSaleSum.toFixed(2));
+    }
+
+    function openWhatsApp() {
+      const phoneNumber = $("#customerPhone").val();
+      const message = "Hello!";
+      const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      window.open(url, "_blank");
+    }
+
+    function openMaps() {
+      const url = `https://www.google.com/maps`;
+      window.open(url, "_blank");
+    }
+
+    function onSuccess() {
+      let number = a2e($("#customerPhone").val());
+      let wNumber = "+961" + Number(number);
+      let text = `تقرير جرد المخزون والتسعير :\n---------------------------\n${invoiceText}\n---------------------------\nإجمالي سعر المبيع : ${$("#totalSaleSumSpan").html()} $\nإجمالي التكلفة : ${$("#totalCostSumSpan").html()} $\n---------------------------`;
+
+      swal({
+        title: 'نجح',
+        text: ' تمت العملية بنجاح، شكرا لك\n' + invoiceText,
+        icon: "success",
+        closeOnClickOutside: false,
+        closeOnEsc: false,
+        buttons: { cancel: "أغلقه", confirm: " أرسل رسالة" },
+      }).then((willSend) => {
+        if (willSend) {
+          window.open('https://wa.me/' + wNumber + '?text=' + encodeURIComponent(text), '_blank');
+          reLoad();
+        } else {
+          reLoad();
+        }
+      });
+    }
+
+    function geoFindMe(form) {
+      $(".save").prop('disabled', true);
+      
+      let objToSave = {
+        method: 'checkStock',
+        e: typeof id !== 'undefined' ? id : '',
+        arrayOfItems: invoiceObject,
+        alt: form.alt.value || '',
+        longi: form.long.value || '',
+        name: form.customerName.value,
+        phone: a2e(form.customerPhone.value),
+        location: form.newLocation.value,
+        totalHiddenBankAccount: form.totalSumInvoiceServer.value,
+        vanNumber: typeof user !== 'undefined' ? user : 'van1',
+        oldCustomer: oldCustomerBool,
+        jsTs: Date.now().toString()
+      };
+
+      if (navigator.onLine) {
+        if (typeof sendRequest === 'function') sendRequest(objToSave);
+      } else {
+        if (typeof saveRequest === 'function') saveRequest(objToSave);
+      }
+
+      onSuccess();
+    }
+
+    function reLoad() {
+      window.location.reload();
+    }
+  </script>
+</body>
+</html>
