@@ -171,7 +171,11 @@
     }
 
     .invoice-row input.item-name {
+    direction: rtl;
       text-align: right;
+      unicode-bidi: plaintext;
+
+      
     }
 
     .subtotal-display {
@@ -495,19 +499,25 @@
       updateTotalInvoice();
     } 
 
-    $(document).on('input', '.invoiceElement', function () {
+   $(document).on('input change', '.invoiceElement, .item-price, .item-sale-price, .item-category, .item-name, .item-qty', function () {
       let card = $(this).closest('.invoice-card');
+      
+      // Mark as updated when any input/change happens
+      card.find('.card-updatedFlag').text("updated");
+
+      // Calculate subtotal
       let salePrice = parseFloat(card.find('.item-sale-price').val()) || 0;
       let qty = parseFloat(card.find('.item-qty').val()) || 0;
       let subtotal = salePrice * qty;
 
+      // Update UI subtotal and zero-stock styling
       card.find('.subtotal-display').text(subtotal.toFixed(2));
-      updateTotalInvoice();
-    });
+      if (typeof checkZeroStock === 'function') {
+        checkZeroStock(card);
+      }
 
-    $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-name', function () {
-      let card = $(this).closest('.invoice-card');
-      card.find('.card-updatedFlag').text("updated");
+      // Recalculate invoice totals once
+      updateTotalInvoice();
     });
 
     function getLocationSelectOptions(arrayOfLocations) {

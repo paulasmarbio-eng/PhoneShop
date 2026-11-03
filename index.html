@@ -413,7 +413,7 @@
       const query = searchInput.value.trim();
       if (!query) return;
 
-      const queryLower = query.toLowerCase();
+      const queryLower = String(query.toLowerCase());
 
       let matchedItem = items.find(item => 
         (item.barcode && String(item.barcode).toLowerCase() === queryLower) ||
@@ -424,6 +424,7 @@
       let price = 0;
 
       if (!matchedItem) {
+         console.log("test122 if 0 " +searchInput);
         let enteredPrice = prompt(`Enter price for custom item "${query}":`, "0");
         if (enteredPrice === null) return; 
         
@@ -438,8 +439,11 @@
           category: "Custom"
         };
       } else {
+         console.log("test122 else0" +searchInput);
         let cat = matchedItem.category ? matchedItem.category.toLowerCase() : "";
+        console.log("test222" +cat);
         if (cat === "maintenance" || cat === "wish" || cat === "fromwish" || cat === "cashtowish") {
+            console.log("test222 in if1" +cat);
           let defaultPrice = matchedItem.averageCost || matchedItem.cost || 0;
           let enteredPrice = prompt(`Enter maintenance charge for "${matchedItem.type}":`, defaultPrice);
           if (enteredPrice === null) return; 
@@ -447,6 +451,7 @@
           price = parseFloat(enteredPrice) || 0;
           matchedItem = { ...matchedItem, averageCost: price, cost: price };
         } else {
+            console.log("test222 in else 1" +cat);
           price = matchedItem.averageCost || matchedItem.cost || 0;
         }
       }
@@ -472,7 +477,7 @@
           
           <div class="invoice-row">
             <label>اسم الغرض</label>
-            <input type="text" value="${item.type ? item.type.replace(/&nbsp;/g, ' ') : ''}" class="item-name" style="width:65%;" />
+            <input type="text" value="${item.type ? item.type.replace(/&nbsp;/g, ' ') : ''}" class="item-name" style="width:65%;" readonly disabled />
           </div>
 
           <div class="invoice-row">
@@ -569,6 +574,27 @@
       document.getElementById("location").innerHTML = html;
     }
 
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.15);
+      } catch (e) {
+        console.log("Audio feedback not supported", e);
+      }
+    }
+    
+      /* Camera Scanner Script */
     let html5QrCode = null;
 
     function startScanner() {
@@ -589,8 +615,11 @@
         { facingMode: "environment" },
         config,
         (decodedText) => {
-          const searchInput = document.getElementById('itemSearch');
-          searchInput.value = decodedText;
+          if ("vibrate" in navigator) {
+            navigator.vibrate(200);
+          }
+          playBeep();
+          document.getElementById('itemSearch').value = decodedText;
           stopScanner();
           processSearch();
         },

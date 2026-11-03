@@ -87,6 +87,12 @@
       border: 2px solid #28a745 !important;
     }
 
+    /* Zero Stock Card State (Red Highlight) */
+    .invoice-card.zero-stock-card {
+      background: #f8d7da !important;
+      border: 2px solid #dc3545 !important;
+    }
+
     .invoice-card-header {
       display: flex;
       justify-content: space-between;
@@ -164,7 +170,9 @@
     }
 
     .invoice-row input.item-name {
+    direction: rtl;
       text-align: right;
+      unicode-bidi: plaintext;
     }
 
     .subtotal-display {
@@ -427,6 +435,17 @@
         $('#invoiceContainer').html('<p style="text-align: center; color: #666; padding: 20px;">لا توجد عناصر مطابقة لهذه الفئة.</p>');
         updateTotalInvoice();
       } else {
+        // SORT: Items with stock (>0) on top, zero-stock items at the bottom
+        filteredItems.sort((a, b) => {
+          let stockA = parseFloat(a.count !== undefined ? a.count : (a.stockCount || 0));
+          let stockB = parseFloat(b.count !== undefined ? b.count : (b.stockCount || 0));
+          
+          let isZeroA = stockA === 0 ? 1 : 0;
+          let isZeroB = stockB === 0 ? 1 : 0;
+          
+          return isZeroA - isZeroB; // Non-zero comes first, zero goes to bottom
+        });
+
         filteredItems.forEach(item => {
           let stockVal = item.count !== undefined ? item.count : (item.stockCount || 0);
           let costVal = item.cost || 0;
@@ -496,6 +515,11 @@
           $('#invoiceContainer').append(cardTemplate);
         });
 
+        // Apply zero-stock check on initial render for all cards
+        $('.invoice-card.itemInTable').each(function() {
+          checkZeroStock($(this));
+        });
+
         updateTotalInvoice();
       }
 
@@ -515,6 +539,15 @@
           console.log("Error fetching category history:", err);
           $('#catHistoryLogContainer').html('<p style="text-align: center; color: #d9534f;">تعذر تحميل السجل.</p>');
         });
+    }
+
+    function checkZeroStock(card) {
+      let qty = parseFloat(card.find('.item-qty').val());
+      if (qty === 0) {
+        card.addClass('zero-stock-card');
+      } else {
+        card.removeClass('zero-stock-card');
+      }
     }
 
     function toggleCheckCard(btn) {
@@ -595,19 +628,25 @@
       container.html(html);
     }
 
-    $(document).on('input', '.invoiceElement', function () {
+    $(document).on('input change', '.invoiceElement, .item-price, .item-sale-price, .item-category, .item-name, .item-qty', function () {
       let card = $(this).closest('.invoice-card');
+      
+      // Mark as updated when any input/change happens
+      card.find('.card-updatedFlag').text("updated");
+
+      // Calculate subtotal
       let salePrice = parseFloat(card.find('.item-sale-price').val()) || 0;
       let qty = parseFloat(card.find('.item-qty').val()) || 0;
       let subtotal = salePrice * qty;
 
+      // Update UI subtotal and zero-stock styling
       card.find('.subtotal-display').text(subtotal.toFixed(2));
-      updateTotalInvoice();
-    });
+      if (typeof checkZeroStock === 'function') {
+        checkZeroStock(card);
+      }
 
-    $(document).on('input', '.item-price, .item-sale-price, .item-category, .item-name', function () {
-      let card = $(this).closest('.invoice-card');
-      card.find('.card-updatedFlag').text("updated");
+      // Recalculate invoice totals once
+      updateTotalInvoice();
     });
 
     function getLocationSelectOptions(arrayOfLocations) {

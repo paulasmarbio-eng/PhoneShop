@@ -423,7 +423,7 @@ input[type="number"] {
         matchedItem = {
           id: "CUSTOM",
           barcode: query,
-          type: query,          // Default name to scanned text/barcode
+          type: '',          // Default name to scanned text/barcode
           averageCost: 0,       // Default sell price
           cost: 0,              // Default cost price
           category: cats && cats.length > 0 ? cats[0].id : "General",
